@@ -1,0 +1,85 @@
+//
+// Set some more minimal defaults than the ones provided by Adwaita.
+//
+
+label, image {
+  color: $foobar-color-foreground-primary;
+  -gtk-icon-filter: none;
+  font-weight: normal;
+}
+
+listview {
+  background: transparent;
+
+  & row {
+    padding: 0;
+  }
+
+  & row:hover {
+    background: $foobar-color-accent-quaternary;
+  }
+
+  & row:active,
+  & row:active:hover,
+  & row:selected,
+  & row:selected:hover {
+    background: $foobar-color-accent-tertiary;
+  }
+
+  & row:hover,
+  & row:active,
+  & row:focus,
+  & row:selected {
+    outline: none;
+  }
+}
+
+separator {
+  background: $foobar-color-border;
+  min-width: $foobar-dim-border-light;
+  min-width: $foobar-dim-border-light;
+}
+
+button {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border-radius: $foobar-dim-radius-small;
+  background: transparent;
+  transition: background-color 0.1s;
+
+  &:hover {
+    background: $foobar-color-accent-quaternary;
+  }
+
+  &:active {
+    background: $foobar-color-accent-tertiary;
+  }
+}
+
+scale {
+  &.horizontal {
+    padding: 8px 2px;
+  }
+
+  &.vertical {
+    padding: 2px 8px;
+  }
+
+  & trough {
+    // XXX: Using a transparent color here causes glitches when draggin the slider to the left.
+    background: mix($foobar-color-accent-primary, $foobar-color-background-secondary, 10%);
+    border-color: mix($foobar-color-accent-primary, $foobar-color-background-secondary, 10%);
+  }
+
+  & highlight {
+    background: $foobar-color-accent-primary;
+    border-color: $foobar-color-accent-primary;
+  }
+
+  & slider {
+    background: $foobar-color-accent-primary;
+    border-color: $foobar-color-accent-primary;
+    box-shadow: none;
+  }
+}

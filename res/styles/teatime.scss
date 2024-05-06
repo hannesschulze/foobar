@@ -1,0 +1,46 @@
+// Color scheme by the AMAZING Nxdxl
+//                             ^ some guy who thought i wouldn't review the source code before publishing it under my name
+
+$foobar-color-background-primary: #fff6f6;
+$foobar-color-background-secondary: #fff6f6;
+$foobar-color-background-tertiary: #fff6f6;
+$foobar-color-background-quaternary: #fff6f6;
+$foobar-color-foreground-primary: #1b1b2e;
+$foobar-color-foreground-secondary: transparentize($foobar-color-foreground-primary, 0.5);
+$foobar-color-foreground-tertiary: transparentize($foobar-color-foreground-primary, 0.8);
+$foobar-color-foreground-quaternary: transparentize($foobar-color-foreground-primary, 0.9);
+$foobar-color-accent-primary: #c2649f;
+$foobar-color-accent-secondary: transparentize($foobar-color-accent-primary, 0.5);
+$foobar-color-accent-tertiary: transparentize($foobar-color-accent-primary, 0.8);
+$foobar-color-accent-quaternary: transparentize($foobar-color-accent-primary, 0.9);
+$foobar-color-alternate-primary: #4ba89d;
+$foobar-color-alternate-secondary: transparentize($foobar-color-alternate-primary, 0.5);
+$foobar-color-alternate-tertiary: transparentize($foobar-color-alternate-primary, 0.8);
+$foobar-color-alternate-quaternary: transparentize($foobar-color-alternate-primary, 0.9);
+$foobar-color-special-primary: #4ba89d;
+$foobar-color-special-secondary: transparentize($foobar-color-special-primary, 0.5);
+$foobar-color-special-tertiary: transparentize($foobar-color-special-primary, 0.8);
+$foobar-color-special-quaternary: transparentize($foobar-color-special-primary, 0.9);
+$foobar-color-urgent-primary: #cd6868;
+$foobar-color-urgent-secondary: transparentize($foobar-color-urgent-primary, 0.5);
+$foobar-color-urgent-tertiary: transparentize($foobar-color-urgent-primary, 0.8);
+$foobar-color-urgent-quaternary: transparentize($foobar-color-urgent-primary, 0.9);
+$foobar-color-border: #c2649f;
+$foobar-dim-border-strong: 2px;
+$foobar-dim-border-light: 2px;
+$foobar-dim-radius-large: 12px;
+$foobar-dim-radius-small: 6px;
+$foobar-dim-spacing-relaxed: 18px;
+$foobar-dim-spacing-large: 12px;
+$foobar-dim-spacing-medium: 6px;
+$foobar-dim-spacing-small: 3px;
+$foobar-dim-margin-large-horizontal: 24px;
+$foobar-dim-margin-large-vertical: 18px;
+$foobar-dim-margin-medium-horizontal: 18px;
+$foobar-dim-margin-medium-vertical: 12px;
+$foobar-dim-margin-small-horizontal: 6px;
+$foobar-dim-margin-small-vertical: 6px;
+$foobar-dim-font-large: 13px;
+$foobar-dim-font-small: 13px;
+
+@import './common';

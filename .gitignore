@@ -1,0 +1,5 @@
+buildDir/
+build/
+.idea/
+.vscode/
+subprojects/*/

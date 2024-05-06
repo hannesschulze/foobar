@@ -1,0 +1,129 @@
+//
+// Styles for the panel and its various supported items.
+//
+
+window.panel {
+  background: $foobar-color-background-primary;
+  border: $foobar-dim-border-light solid $foobar-color-border;
+  border-radius: $foobar-dim-radius-large;
+
+  & panel-item.workspaces {
+    & row,
+    & row:hover,
+    & row:active,
+    & row:focus ,
+    & row:selected {
+      background: transparent;
+    }
+
+    & button {
+      border-radius: 100%;
+      outline: $foobar-dim-border-strong solid $foobar-color-accent-primary;
+      outline-offset: 0;
+      border: $foobar-dim-spacing-small solid $foobar-color-background-primary; // Cut-out effect
+      margin: $foobar-dim-border-strong; // To reverse the outline
+      padding: 0;
+      background: transparent;
+      transition: background-color 0.1s;
+
+      &:hover {
+        background: $foobar-color-accent-tertiary;
+      }
+
+      &.visible {
+        background: $foobar-color-accent-secondary;
+      }
+
+      &.active {
+        background: $foobar-color-accent-primary;
+      }
+    }
+
+    @if variable-exists(foobar-color-alternate-primary) {
+      & row:nth-child(even) button:not(.special):not(.urgent) {
+        outline-color: $foobar-color-alternate-primary;
+
+        &:hover {
+          background: $foobar-color-alternate-tertiary;
+        }
+
+        &.visible {
+          background: $foobar-color-alternate-secondary;
+        }
+
+        &.active {
+          background: $foobar-color-alternate-primary;
+        }
+      }
+    }
+
+    & button.special {
+      outline-color: $foobar-color-special-primary;
+
+      &:hover {
+        background: $foobar-color-special-tertiary;
+      }
+
+      &.visible {
+        background: $foobar-color-special-secondary;
+      }
+
+      &.active {
+        background: $foobar-color-special-primary;
+      }
+    }
+
+    & button.urgent {
+      outline-color: $foobar-color-urgent-primary;
+
+      &:hover {
+        background: $foobar-color-urgent-tertiary;
+      }
+
+      &.visible {
+        background: $foobar-color-urgent-secondary;
+      }
+
+      &.active {
+        background: $foobar-color-urgent-primary;
+      }
+    }
+  }
+
+  & panel-item.clock {
+    & button {
+      min-width: 24px;
+      min-height: 24px;
+    }
+
+    & label {
+      font-size: $foobar-dim-font-large;
+      font-weight: bold;
+    }
+  }
+
+  & panel-item.icon {
+    & button {
+      -gtk-icon-size: 20px;
+      min-width: 24px;
+      min-height: 24px;
+    }
+  }
+
+  & panel-item.status {
+    & button {
+      min-width: 24px;
+      min-height: 24px;
+    }
+
+    & image {
+      -gtk-icon-size: 20px;
+    }
+
+    & label {
+      margin-left: $foobar-dim-spacing-small;
+      font-weight: normal;
+      font-size: $foobar-dim-font-small;
+    }
+  }
+}

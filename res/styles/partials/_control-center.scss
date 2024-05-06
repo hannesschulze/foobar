@@ -1,0 +1,142 @@
+//
+// Styles for the control center, including its "controls" and "notifications" sections.
+//
+
+window.control-center {
+  // XXX: To prevent some glitches
+  background: rgba(0, 0, 0, 0.005);
+  border-radius: $foobar-dim-radius-large;
+
+  & > box {
+    background: $foobar-color-background-primary;
+    // XXX: Applying the border directly to the window seems to confuse hyprland, GTK, or something else.
+    // To reproduce: set position to "right", alignment to "start", and foobar-dim-border-light to some large value.
+    border: $foobar-dim-border-light solid $foobar-color-border;
+    border-radius: $foobar-dim-radius-large;
+  }
+
+  & control-button,
+  & control-slider {
+    background: $foobar-color-background-secondary;
+    border: $foobar-dim-border-light solid $foobar-color-border;
+    border-radius: $foobar-dim-radius-large;
+    transition: background-color 0.1s, border 0.1s;
+
+    & label,
+    & image {
+      transition: color 0.1s;
+    }
+
+    & image {
+      -gtk-icon-size: 20px;
+    }
+
+    & button {
+      transition: background-color 0.1s, color 0.1s;
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+
+      // "Linked" style
+
+      &:last-child {
+        border-top-right-radius: $foobar-dim-radius-large;
+        border-bottom-right-radius: $foobar-dim-radius-large;
+      }
+
+      &:first-child {
+        border-top-left-radius: $foobar-dim-radius-large;
+        border-bottom-left-radius: $foobar-dim-radius-large;
+      }
+    }
+
+    & scale {
+      margin-top: $foobar-dim-spacing-medium;
+    }
+
+    & > .primary {
+      padding: $foobar-dim-margin-medium-vertical $foobar-dim-margin-medium-horizontal;
+
+      & label {
+        font-weight: bold;
+      }
+
+      & image {
+        margin-right: $foobar-dim-spacing-medium;
+      }
+    }
+
+    & > .expand {
+      border-left: $foobar-dim-border-light solid $foobar-color-border;
+      padding: $foobar-dim-margin-small-vertical $foobar-dim-margin-small-horizontal;
+
+      & image {
+        transition: transform 0.1s;
+        transform: rotate(0deg);
+      }
+    }
+
+    &.toggled {
+      background: $foobar-color-accent-primary;
+
+      & label,
+      & image {
+        color: $foobar-color-background-primary;
+      }
+    }
+
+    &.expanded {
+      & > .expand image {
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  & control-details {
+    & scrolledwindow {
+      background: $foobar-color-background-secondary;
+      border-top: $foobar-dim-border-light solid $foobar-color-border;
+      border-bottom: $foobar-dim-border-light solid $foobar-color-border;
+    }
+
+    & row {
+      $inset: $foobar-dim-spacing-medium;
+
+      padding-top: $foobar-dim-margin-small-vertical;
+      padding-bottom: $foobar-dim-margin-small-vertical;
+      padding-left: $foobar-dim-margin-medium-horizontal - $inset; // Aligned to primary button content
+      padding-right: $foobar-dim-margin-small-horizontal - $inset; // Aligned to expand button content
+      margin-top: $inset;
+      margin-left: $inset;
+      margin-right: $inset;
+      border-radius: $foobar-dim-radius-small;
+
+      &:last-child {
+        margin-bottom: $inset;
+      }
+
+      & .accessory {
+        margin-left: $foobar-dim-spacing-medium;
+      }
+    }
+  }
+
+  & .notifications {
+    & row,
+    & row:hover,
+    & row:active,
+    & row:focus ,
+    & row:selected {
+      background: transparent;
+    }
+
+    & notification .content {
+      background: $foobar-color-background-secondary;
+    }
+  }
+
+  & .placeholder {
+    font-size: $foobar-dim-font-large;
+    color: $foobar-color-foreground-secondary;
+  }
+}

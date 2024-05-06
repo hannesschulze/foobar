@@ -1,0 +1,66 @@
+.TH FOOBAR 1 "April 2024" "1.0.0" "User Commands"
+
+.SH NAME
+.PP
+foobar \- a simple bar, launcher, control center, and notification daemon.
+
+.SH SYNPOSIS
+.PP
+.B foobar
+.RI [\| "ACTION" \|]...
+.br
+.B foobar
+.B \-h
+
+.SH DESCRIPTION
+.PP
+.B foobar
+can be used to launch the main
+.I server
+instance of the bar application, or to send commands to an active server process.
+
+If there is no other instance running, the command only launches the bar regardless of the
+.I actions
+passed to it.  Otherwise, no new instance is launched and all the specified
+.I actions
+are processed one after another.
+
+.SH OPTIONS
+.TP
+.BR \-q ", " \-\-quit
+Kindly ask the active bar instance to kill itself.
+.TP
+.BR \-l ", " \-\-toggle\-launcher
+Toggle the visibility of the application's 
+.I launcher
+window.  If not previously shown, it will appear on the currently active monitor.
+.TP
+.BR \-c ", " \-\-toggle\-control\-center
+Toggle the visibility of the application's 
+.I control center
+window.  If not previously shown, it will appear on the currently active monitor.
+.TP
+.BR \-i ", " \-\-inspector
+Open the GTK inspector for the active bar instance.  This can be useful for inspecting the widget hierarchy or quickly testing changes to the application's stylesheet.
+
+.SH FILES
+.TP
+.I $XDG_CONFIG_HOME/foobar.conf
+The main configuration for all components of the application.
+
+This file is created and initialized to the default configuration when
+.I foobar
+is first launched.
+
+.SH BUGS
+.TP
+Submit bug reports and request features online at:
+<\f[I]https://github.com/hannesschulze/foobar/issues\f[R]>
+
+.SH SEE ALSO
+.PP
+Sources at: <\f[I]https://github.com/hannesschulze/foobar\f[R]>
+
+.SH COPYRIGHT
+.PP
+Copyright (c) 2024, the Foobar developers

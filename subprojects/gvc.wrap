@@ -1,0 +1,4 @@
+[wrap-git]
+url = https://gitlab.gnome.org/GNOME/libgnome-volume-control.git
+revision = 91f3f41490666a526ed78af744507d7ee1134323
+depth = 1

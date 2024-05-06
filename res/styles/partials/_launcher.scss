@@ -1,0 +1,67 @@
+//
+// Styles for the launcher.
+//
+// The search icon and label should be aligned to the result item icons (at the center) and labels (at the start).
+//
+
+window.launcher {
+  background: $foobar-color-background-primary;
+  border: $foobar-dim-border-light solid $foobar-color-border;
+  border-radius: $foobar-dim-radius-large;
+
+  $search-icon-size: 24px;
+  $app-icon-size: 32px;
+  // How far the app icon needs to extend into the spacing around it.
+  $icon-overrun: ($app-icon-size - $search-icon-size) / 2;
+
+  & .search {
+    padding: $foobar-dim-margin-large-vertical $foobar-dim-margin-large-horizontal;
+
+    & image {
+      -gtk-icon-size: $search-icon-size;
+      margin-right: $foobar-dim-spacing-relaxed;
+      color: $foobar-color-foreground-secondary;
+    }
+
+    & placeholder {
+      color: $foobar-color-foreground-secondary;
+    }
+
+    & text {
+      font-size: $foobar-dim-font-large;
+    }
+  }
+
+  & row {
+    $inset: $foobar-dim-spacing-medium;
+
+    padding-left: $foobar-dim-margin-large-horizontal - $icon-overrun - $inset;
+    padding-right: $foobar-dim-margin-large-horizontal - $inset;
+    padding-top: $foobar-dim-margin-medium-vertical;
+    padding-bottom: $foobar-dim-margin-medium-vertical;
+    margin-top: $inset;
+    margin-left: $inset;
+    margin-right: $inset;
+    border-radius: $foobar-dim-radius-small;
+
+    &:last-child {
+      margin-bottom: $inset;
+    }
+
+    & .icon {
+      -gtk-icon-size: $app-icon-size;
+      margin-right: $foobar-dim-spacing-relaxed - $icon-overrun;
+    }
+
+    & .name {
+      font-size: $foobar-dim-font-small;
+      font-weight: bold;
+    }
+
+    & .description {
+      font-size: $foobar-dim-font-small;
+      margin-top: $foobar-dim-spacing-small;
+      color: $foobar-color-foreground-secondary;
+    }
+  }
+}

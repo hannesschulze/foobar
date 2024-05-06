@@ -1,0 +1,45 @@
+//
+// Color scheme based on the awesome Monokai Pro (https://monokai.pro/).
+//
+// The accent color is a custom one though ¯\_(ツ)_/¯
+//
+
+$foobar-color-background-primary: #19181A;
+$foobar-color-background-secondary: #2d2a2e;
+$foobar-color-background-tertiary: #3e3b40;
+$foobar-color-background-quaternary: #474449;
+$foobar-color-foreground-primary: #fcfcfa;
+$foobar-color-foreground-secondary: transparentize($foobar-color-foreground-primary, 0.5);
+$foobar-color-foreground-tertiary: transparentize($foobar-color-foreground-primary, 0.8);
+$foobar-color-foreground-quaternary: transparentize($foobar-color-foreground-primary, 0.9);
+$foobar-color-accent-primary: #c3b4b0;
+$foobar-color-accent-secondary: transparentize($foobar-color-accent-primary, 0.5);
+$foobar-color-accent-tertiary: transparentize($foobar-color-accent-primary, 0.8);
+$foobar-color-accent-quaternary: transparentize($foobar-color-accent-primary, 0.9);
+$foobar-color-special-primary: #fc9867;
+$foobar-color-special-secondary: transparentize($foobar-color-special-primary, 0.5);
+$foobar-color-special-tertiary: transparentize($foobar-color-special-primary, 0.8);
+$foobar-color-special-quaternary: transparentize($foobar-color-special-primary, 0.9);
+$foobar-color-urgent-primary: #ff6188;
+$foobar-color-urgent-secondary: transparentize($foobar-color-urgent-primary, 0.5);
+$foobar-color-urgent-tertiary: transparentize($foobar-color-urgent-primary, 0.8);
+$foobar-color-urgent-quaternary: transparentize($foobar-color-urgent-primary, 0.9);
+$foobar-color-border: #101011;
+$foobar-dim-border-strong: 2px;
+$foobar-dim-border-light: 1px;
+$foobar-dim-radius-large: 12px;
+$foobar-dim-radius-small: 6px;
+$foobar-dim-spacing-relaxed: 18px;
+$foobar-dim-spacing-large: 12px;
+$foobar-dim-spacing-medium: 6px;
+$foobar-dim-spacing-small: 3px;
+$foobar-dim-margin-large-horizontal: 24px;
+$foobar-dim-margin-large-vertical: 18px;
+$foobar-dim-margin-medium-horizontal: 18px;
+$foobar-dim-margin-medium-vertical: 12px;
+$foobar-dim-margin-small-horizontal: 6px;
+$foobar-dim-margin-small-vertical: 6px;
+$foobar-dim-font-large: 16px;
+$foobar-dim-font-small: 13px;
+
+@import './common';

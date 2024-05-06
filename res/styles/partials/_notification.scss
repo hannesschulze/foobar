@@ -1,0 +1,67 @@
+//
+// General notification style, used both in the control center as well as the notification area
+//
+
+notification {
+  & .content {
+    background: $foobar-color-background-primary;
+    border: $foobar-dim-border-light solid $foobar-color-border;
+    border-radius: $foobar-dim-radius-large;
+    padding: $foobar-dim-margin-medium-vertical $foobar-dim-margin-medium-horizontal;
+  }
+
+  & .icon {
+    -gtk-icon-size: 32px;
+    margin-right: $foobar-dim-spacing-large;
+  }
+
+  & .title {
+    font-weight: bold;
+  }
+
+  & .body {
+    font-size: $foobar-dim-font-small;
+    margin-top: $foobar-dim-spacing-small;
+  }
+
+  & .time {
+    font-size: $foobar-dim-font-small;
+    color: $foobar-color-foreground-secondary;
+    margin-left: $foobar-dim-spacing-medium;
+  }
+
+  & .close-button {
+    min-width: 24px;
+    min-height: 24px;
+    background: $foobar-color-background-secondary;
+    border: $foobar-dim-border-light solid $foobar-color-border;
+    border-radius: 100%;
+
+    &:hover {
+      background: $foobar-color-background-tertiary;
+    }
+
+    &:active {
+      background: $foobar-color-background-quaternary;
+    }
+  }
+}
+
+//
+// Style for the notification area window presenting popup notifications
+//
+
+window.notification-area {
+  &, & listview {
+    // XXX: To prevent some glitches
+    background: rgba(0, 0, 0, 0.005);
+  }
+
+  & row,
+  & row:hover,
+  & row:active,
+  & row:focus ,
+  & row:selected {
+    background: transparent;
+  }
+}

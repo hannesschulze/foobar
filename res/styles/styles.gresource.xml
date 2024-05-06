@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+    <gresource prefix="/foobar/styles">
+        <file compressed="true">default.css</file>
+        <file compressed="true">monokai-pro.css</file>
+        <file compressed="true">teatime.css</file>
+    </gresource>
+</gresources>

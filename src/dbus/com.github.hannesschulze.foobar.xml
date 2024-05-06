@@ -1,0 +1,8 @@
+<node>
+    <interface name="com.github.hannesschulze.foobar.Server">
+        <method name="Inspector"/>
+        <method name="Quit"/>
+        <method name="ToggleLauncher"/>
+        <method name="ToggleControlCenter"/>
+    </interface>
+</node>
