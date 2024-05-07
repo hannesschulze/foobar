@@ -23,10 +23,10 @@
         };
 
         devShells = {
-          algoks = pkgs.mkShell {
+          default = pkgs.mkShell {
             name = "foobar";
             packages = [ pkgs.libnotify ]; # for testing the notification daemon
-            inputsFrom = foobar;
+            inputsFrom = [ foobar ];
           };
         };
       });
