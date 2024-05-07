@@ -34,6 +34,7 @@ These dependencies must be present before building:
 
 - `meson`
 - `ninja`
+- `sassc`
 - `glib`
 - `gtk4`
 - `json-glib`
