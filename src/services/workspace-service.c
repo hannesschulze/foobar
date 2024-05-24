@@ -142,6 +142,7 @@ static FoobarWorkspace* foobar_workspace_service_find_workspace                 
                                                                                      guint*                       out_index );
 static gboolean         foobar_workspace_service_is_invalid_name                   ( gchar const*                 name );
 static gint64           foobar_workspace_service_parse_id                          ( gchar const*                 str );
+static gchar*           foobar_workspace_service_get_hyprland_base_path            ( void );
 static gint             foobar_workspace_service_compare_ids                       ( gconstpointer                a,
                                                                                      gconstpointer                b );
 static gint             foobar_workspace_service_sort_func                         ( gconstpointer                item_a,
@@ -487,15 +488,15 @@ void foobar_workspace_service_init( FoobarWorkspaceService* self )
 		G_LIST_MODEL( g_object_ref( self->workspaces ) ),
 		GTK_SORTER( sorter ) );
 
-	gchar const* instance_signature = g_getenv( "HYPRLAND_INSTANCE_SIGNATURE" );
-	if ( !instance_signature )
+	g_autofree gchar* base_path = foobar_workspace_service_get_hyprland_base_path( );
+	if ( !base_path )
 	{
 		g_warning( "Unable to connect to hyprland -- is it currently running?" );
 		return;
 	}
 
-	self->tx_path = g_strdup_printf( "/tmp/hypr/%s/.socket.sock", instance_signature );
-	self->rx_path = g_strdup_printf( "/tmp/hypr/%s/.socket2.sock", instance_signature );
+	self->tx_path = g_strdup_printf( "%s/.socket.sock", base_path );
+	self->rx_path = g_strdup_printf( "%s/.socket2.sock", base_path );
 	self->event_cancellable = g_cancellable_new( );
 	self->event_thread = g_thread_new( "workspace-event-listener", foobar_workspace_service_event_thread_func, self );
 
@@ -1257,6 +1258,36 @@ gint64 foobar_workspace_service_parse_id( gchar const* str )
 	if ( !g_strcmp0( str, "special" ) ) { return -99; }
 
 	return strtoll( str, NULL, 10 );
+}
+
+//
+// Get the base path for hyprland socket files.
+//
+gchar* foobar_workspace_service_get_hyprland_base_path( void )
+{
+	gchar const* instance_signature = g_getenv( "HYPRLAND_INSTANCE_SIGNATURE" );
+	if ( !instance_signature )
+	{
+		return NULL;
+	}
+
+	// for Hyprland >= 0.40
+	gchar* result = g_strdup_printf( "%s/hypr/%s", g_get_user_runtime_dir( ), instance_signature );
+	if ( g_file_test( result, G_FILE_TEST_EXISTS ) )
+	{
+		return result;
+	}
+
+	// for Hyprland < 0.40
+	g_free( result );
+	result = g_strdup_printf( "%s/hypr/%s", g_get_tmp_dir( ), instance_signature );
+	if ( g_file_test( result, G_FILE_TEST_EXISTS ) )
+	{
+		return result;
+	}
+
+	g_free( result );
+	return NULL;
 }
 
 //
