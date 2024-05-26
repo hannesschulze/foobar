@@ -25,7 +25,10 @@
         devShells = {
           default = pkgs.mkShell {
             name = "foobar";
-            packages = [ pkgs.libnotify ]; # for testing the notification daemon
+            packages = [
+              pkgs.libnotify # for testing the notification daemon
+              pkgs.clang-tools
+            ];
             inputsFrom = [ foobar ];
           };
         };

@@ -2,4 +2,5 @@ buildDir/
 build/
 .idea/
 .vscode/
+.cache/
 subprojects/*/
