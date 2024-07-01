@@ -3,6 +3,7 @@
 #include <gtk/gtk.h>
 #include "services/application-service.h"
 #include "services/configuration-service.h"
+#include "services/quick-answer-service.h"
 
 G_BEGIN_DECLS
 
@@ -11,6 +12,7 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE( FoobarLauncher, foobar_launcher, FOOBAR, LAUNCHER, GtkWindow )
 
 FoobarLauncher* foobar_launcher_new                ( FoobarApplicationService*          application_service,
+													 FoobarQuickAnswerService*          quick_answer_service,
                                                      FoobarConfigurationService*        configuration_service );
 void            foobar_launcher_apply_configuration( FoobarLauncher*                    self,
                                                      FoobarLauncherConfiguration const* config );

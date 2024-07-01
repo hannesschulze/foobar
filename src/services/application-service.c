@@ -1,4 +1,5 @@
 #include "services/application-service.h"
+#include "launcher-item.h"
 #include "utils.h"
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
@@ -21,29 +22,38 @@ struct _FoobarApplicationItem
 enum
 {
 	APP_PROP_ID = 1,
-	APP_PROP_NAME,
-	APP_PROP_DESCRIPTION,
 	APP_PROP_EXECUTABLE,
 	APP_PROP_CATEGORIES,
-	APP_PROP_ICON,
 	APP_PROP_FREQUENCY,
+	APP_PROP_TITLE,
+	APP_PROP_DESCRIPTION,
+	APP_PROP_ICON,
 	N_APP_PROPS,
 };
 
 static GParamSpec* app_props[N_APP_PROPS] = { 0 };
 
-static void                   foobar_application_item_class_init  ( FoobarApplicationItemClass* klass );
-static void                   foobar_application_item_init        ( FoobarApplicationItem*      self );
-static void                   foobar_application_item_get_property( GObject*                    object,
-                                                                    guint                       prop_id,
-                                                                    GValue*                     value,
-                                                                    GParamSpec*                 pspec );
-static void                   foobar_application_item_finalize    ( GObject*                    object );
-static FoobarApplicationItem* foobar_application_item_new         ( FoobarApplicationService*   service );
-static void                   foobar_application_item_set_info    ( FoobarApplicationItem*      self,
-                                                                    GAppInfo*                   value );
+static void                   foobar_application_item_class_init                  ( FoobarApplicationItemClass* klass );
+static void                   foobar_application_item_launcher_item_interface_init( FoobarLauncherItemInterface* iface );
+static void                   foobar_application_item_init                        ( FoobarApplicationItem*      self );
+static void                   foobar_application_item_get_property                ( GObject*                    object,
+                                                                                    guint                       prop_id,
+                                                                                    GValue*                     value,
+                                                                                    GParamSpec*                 pspec );
+static void                   foobar_application_item_finalize                    ( GObject*                    object );
+static FoobarApplicationItem* foobar_application_item_new                         ( FoobarApplicationService*   service );
+static gchar const*           foobar_application_item_get_title                   ( FoobarLauncherItem*         self );
+static gchar const*           foobar_application_item_get_description             ( FoobarLauncherItem*         self );
+static GIcon*                 foobar_application_item_get_icon                    ( FoobarLauncherItem*         self );
+static void                   foobar_application_item_activate                    ( FoobarLauncherItem*         self );
+static void                   foobar_application_item_set_info                    ( FoobarApplicationItem*      self,
+                                                                                    GAppInfo*                   value );
 
-G_DEFINE_FINAL_TYPE( FoobarApplicationItem, foobar_application_item, G_TYPE_OBJECT )
+G_DEFINE_FINAL_TYPE_WITH_CODE(
+	FoobarApplicationItem,
+	foobar_application_item,
+	G_TYPE_OBJECT,
+	G_IMPLEMENT_INTERFACE( FOOBAR_TYPE_LAUNCHER_ITEM, foobar_application_item_launcher_item_interface_init ) )
 
 //
 // FoobarApplicationService:
@@ -124,22 +134,11 @@ void foobar_application_item_class_init( FoobarApplicationItemClass* klass )
 	object_klass->get_property = foobar_application_item_get_property;
 	object_klass->finalize = foobar_application_item_finalize;
 
+	gpointer launcher_item_iface = g_type_default_interface_peek( FOOBAR_TYPE_LAUNCHER_ITEM );
 	app_props[APP_PROP_ID] = g_param_spec_string(
 		"id",
 		"ID",
 		"Application identifier string.",
-		NULL,
-		G_PARAM_READABLE );
-	app_props[APP_PROP_NAME] = g_param_spec_string(
-		"name",
-		"Name",
-		"Displayed name for the application.",
-		NULL,
-		G_PARAM_READABLE );
-	app_props[APP_PROP_DESCRIPTION] = g_param_spec_string(
-		"description",
-		"Description",
-		"Brief description of the application.",
 		NULL,
 		G_PARAM_READABLE );
 	app_props[APP_PROP_EXECUTABLE] = g_param_spec_string(
@@ -154,12 +153,6 @@ void foobar_application_item_class_init( FoobarApplicationItemClass* klass )
 		"Semicolon-separated list of application categories.",
 		NULL,
 		G_PARAM_READABLE );
-	app_props[APP_PROP_ICON] = g_param_spec_object(
-		"icon",
-		"Icon",
-		"Icon to show for the application.",
-		G_TYPE_ICON,
-		G_PARAM_READABLE );
 	app_props[APP_PROP_FREQUENCY] = g_param_spec_int64(
 		"frequency",
 		"Frequency",
@@ -168,7 +161,27 @@ void foobar_application_item_class_init( FoobarApplicationItemClass* klass )
 		INT64_MAX,
 		0,
 		G_PARAM_READABLE );
+	app_props[APP_PROP_TITLE] = g_param_spec_override(
+		"title",
+		g_object_interface_find_property( launcher_item_iface, "title" ) );
+	app_props[APP_PROP_DESCRIPTION] = g_param_spec_override(
+		"description",
+		g_object_interface_find_property( launcher_item_iface, "description" ) );
+	app_props[APP_PROP_ICON] = g_param_spec_override(
+		"icon",
+		g_object_interface_find_property( launcher_item_iface, "icon" ) );
 	g_object_class_install_properties( object_klass, N_APP_PROPS, app_props );
+}
+
+//
+// Static initialization of the FoobarLauncherItem interface.
+//
+void foobar_application_item_launcher_item_interface_init( FoobarLauncherItemInterface* iface )
+{
+	iface->get_title = foobar_application_item_get_title;
+	iface->get_description = foobar_application_item_get_description;
+	iface->get_icon = foobar_application_item_get_icon;
+	iface->activate = foobar_application_item_activate;
 }
 
 //
@@ -195,23 +208,23 @@ void foobar_application_item_get_property(
 		case APP_PROP_ID:
 			g_value_set_string( value, foobar_application_item_get_id( self ) );
 			break;
-		case APP_PROP_NAME:
-			g_value_set_string( value, foobar_application_item_get_name( self ) );
-			break;
-		case APP_PROP_DESCRIPTION:
-			g_value_set_string( value, foobar_application_item_get_description( self ) );
-			break;
 		case APP_PROP_EXECUTABLE:
 			g_value_set_string( value, foobar_application_item_get_executable( self ) );
 			break;
 		case APP_PROP_CATEGORIES:
 			g_value_set_string( value, foobar_application_item_get_categories( self ) );
 			break;
-		case APP_PROP_ICON:
-			g_value_set_object( value, foobar_application_item_get_icon( self ) );
-			break;
 		case APP_PROP_FREQUENCY:
 			g_value_set_int64( value, foobar_application_item_get_frequency( self ) );
+			break;
+		case APP_PROP_TITLE:
+			g_value_set_string( value, foobar_launcher_item_get_title( FOOBAR_LAUNCHER_ITEM ( self ) ) );
+			break;
+		case APP_PROP_DESCRIPTION:
+			g_value_set_string( value, foobar_launcher_item_get_description( FOOBAR_LAUNCHER_ITEM( self ) ) );
+			break;
+		case APP_PROP_ICON:
+			g_value_set_object( value, foobar_launcher_item_get_icon( FOOBAR_LAUNCHER_ITEM( self ) ) );
 			break;
 		default:
 			G_OBJECT_WARN_INVALID_PROPERTY_ID( object, prop_id, pspec );
@@ -251,24 +264,6 @@ gchar const* foobar_application_item_get_id( FoobarApplicationItem* self )
 }
 
 //
-// Get the application's human-readable name.
-//
-gchar const* foobar_application_item_get_name( FoobarApplicationItem* self )
-{
-	g_return_val_if_fail( FOOBAR_IS_APPLICATION_ITEM( self ), NULL );
-	return self->info ? g_app_info_get_display_name( self->info ) : NULL;
-}
-
-//
-// Get an optional short description for the application.
-//
-gchar const* foobar_application_item_get_description( FoobarApplicationItem* self )
-{
-	g_return_val_if_fail( FOOBAR_IS_APPLICATION_ITEM( self ), NULL );
-	return self->info ? g_app_info_get_description( self->info ) : NULL;
-}
-
-//
 // Get the application's executable name.
 //
 gchar const* foobar_application_item_get_executable( FoobarApplicationItem* self )
@@ -289,15 +284,6 @@ gchar const* foobar_application_item_get_categories( FoobarApplicationItem* self
 }
 
 //
-// Get an icon representing the application.
-//
-GIcon* foobar_application_item_get_icon( FoobarApplicationItem* self )
-{
-	g_return_val_if_fail( FOOBAR_IS_APPLICATION_ITEM( self ), NULL );
-	return self->info ? g_app_info_get_icon( self->info ) : NULL;
-}
-
-//
 // Get the number of times this application was opened using the launcher.
 //
 gint64 foobar_application_item_get_frequency( FoobarApplicationItem* self )
@@ -310,65 +296,38 @@ gint64 foobar_application_item_get_frequency( FoobarApplicationItem* self )
 }
 
 //
-// Update the backing GAppInfo object for the application.
+// Get the application's human-readable name.
 //
-void foobar_application_item_set_info(
-	FoobarApplicationItem* self,
-	GAppInfo*              value )
+gchar const* foobar_application_item_get_title( FoobarLauncherItem* item )
 {
-	g_return_if_fail( FOOBAR_IS_APPLICATION_ITEM( self ) );
-
-	if ( self->info != value )
-	{
-		g_clear_object( &self->info );
-
-		if ( value ) { self->info = g_object_ref( value ); }
-
-		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_ID] );
-		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_NAME] );
-		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_DESCRIPTION] );
-		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_EXECUTABLE] );
-		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_ICON] );
-		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_FREQUENCY] );
-	}
+	FoobarApplicationItem* self = ( FoobarApplicationItem* )item;
+	return self->info ? g_app_info_get_display_name( self->info ) : NULL;
 }
 
 //
-// Match the item against the given search terms.
+// Get an optional short description for the application.
 //
-gboolean foobar_application_item_match(
-	FoobarApplicationItem* self,
-	gchar const* const*    terms )
+gchar const* foobar_application_item_get_description( FoobarLauncherItem* item )
 {
-	g_return_val_if_fail( FOOBAR_IS_APPLICATION_ITEM( self ), FALSE );
-	g_return_val_if_fail( terms != NULL, FALSE );
+	FoobarApplicationItem* self = ( FoobarApplicationItem* )item;
+	return self->info ? g_app_info_get_description( self->info ) : NULL;
+}
 
-	for ( gchar const* const* it = terms; *it; ++it )
-	{
-		gchar const* term = *it;
-		gchar const* name = foobar_application_item_get_name( self );
-		gchar const* description = foobar_application_item_get_description( self );
-		gchar const* executable = foobar_application_item_get_executable( self );
-		gchar const* categories = foobar_application_item_get_categories( self );
-		gchar const* id = foobar_application_item_get_id( self );
-		if ( name && strcasestr( name, term ) != NULL ) { continue; }
-		if ( description && strcasestr( description, term ) != NULL ) { continue; }
-		if ( executable && strcasestr( executable, term ) != NULL ) { continue; }
-		if ( categories && strcasestr( categories, term ) != NULL ) { continue; }
-		if ( id && strcasestr( id, term ) != NULL ) { continue; }
-
-		return FALSE;
-	}
-
-	return TRUE;
+//
+// Get an icon representing the application.
+//
+GIcon* foobar_application_item_get_icon( FoobarLauncherItem* item )
+{
+	FoobarApplicationItem* self = ( FoobarApplicationItem* )item;
+	return self->info ? g_app_info_get_icon( self->info ) : NULL;
 }
 
 //
 // Launch the application, increasing its frequency by one.
 //
-void foobar_application_item_launch( FoobarApplicationItem* self )
+void foobar_application_item_activate( FoobarLauncherItem* item )
 {
-	g_return_if_fail( FOOBAR_IS_APPLICATION_ITEM( self ) );
+	FoobarApplicationItem* self = ( FoobarApplicationItem* )item;
 
 	if ( !self->info ) { return; }
 
@@ -390,6 +349,60 @@ void foobar_application_item_launch( FoobarApplicationItem* self )
 	g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_FREQUENCY] );
 	gtk_sorter_changed( gtk_sort_list_model_get_sorter( self->service->sorted_items ), GTK_SORTER_CHANGE_DIFFERENT );
 	foobar_application_service_write_cache( self->service );
+}
+
+//
+// Update the backing GAppInfo object for the application.
+//
+void foobar_application_item_set_info(
+	FoobarApplicationItem* self,
+	GAppInfo*              value )
+{
+	g_return_if_fail( FOOBAR_IS_APPLICATION_ITEM( self ) );
+
+	if ( self->info != value )
+	{
+		g_clear_object( &self->info );
+
+		if ( value ) { self->info = g_object_ref( value ); }
+
+		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_ID] );
+		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_TITLE] );
+		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_DESCRIPTION] );
+		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_EXECUTABLE] );
+		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_ICON] );
+		g_object_notify_by_pspec( G_OBJECT( self ), app_props[APP_PROP_FREQUENCY] );
+	}
+}
+
+//
+// Match the item against the given search terms.
+//
+gboolean foobar_application_item_match(
+	FoobarApplicationItem* self,
+	gchar const* const*    terms )
+{
+	g_return_val_if_fail( FOOBAR_IS_APPLICATION_ITEM( self ), FALSE );
+	g_return_val_if_fail( terms != NULL, FALSE );
+
+	for ( gchar const* const* it = terms; *it; ++it )
+	{
+		gchar const* term = *it;
+		gchar const* name = foobar_launcher_item_get_title( FOOBAR_LAUNCHER_ITEM( self ) );
+		gchar const* description = foobar_launcher_item_get_description( FOOBAR_LAUNCHER_ITEM( self ) );
+		gchar const* executable = foobar_application_item_get_executable( self );
+		gchar const* categories = foobar_application_item_get_categories( self );
+		gchar const* id = foobar_application_item_get_id( self );
+		if ( name && strcasestr( name, term ) != NULL ) { continue; }
+		if ( description && strcasestr( description, term ) != NULL ) { continue; }
+		if ( executable && strcasestr( executable, term ) != NULL ) { continue; }
+		if ( categories && strcasestr( categories, term ) != NULL ) { continue; }
+		if ( id && strcasestr( id, term ) != NULL ) { continue; }
+
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -722,8 +735,8 @@ gint foobar_application_service_sort_func(
 	if ( freq_a > freq_b ) { return -1; }
 	if ( freq_a < freq_b ) { return 1; }
 
-	gchar const* name_a = foobar_application_item_get_name( app_a );
-	gchar const* name_b = foobar_application_item_get_name( app_b );
+	gchar const* name_a = foobar_launcher_item_get_title( FOOBAR_LAUNCHER_ITEM( app_a ) );
+	gchar const* name_b = foobar_launcher_item_get_title( FOOBAR_LAUNCHER_ITEM( app_b ) );
 	gint name_res = g_strcmp0( name_a, name_b );
 	if ( name_res ) { return name_res; }
 

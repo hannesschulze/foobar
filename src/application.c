@@ -7,6 +7,7 @@
 #include "services/battery-service.h"
 #include "services/clock-service.h"
 #include "services/brightness-service.h"
+#include "services/quick-answer-service.h"
 #include "services/workspace-service.h"
 #include "services/notification-service.h"
 #include "services/audio-service.h"
@@ -38,6 +39,7 @@ struct _FoobarApplication
 	FoobarNetworkService*       network_service;
 	FoobarBluetoothService*     bluetooth_service;
 	FoobarApplicationService*   application_service;
+	FoobarQuickAnswerService*   quick_answer_service;
 	FoobarConfigurationService* configuration_service;
 	gulong                      config_handler_id;
 	FoobarServer*               server_skeleton;
@@ -180,6 +182,7 @@ void foobar_application_activate( GApplication* app )
 	self->network_service = foobar_network_service_new( );
 	self->bluetooth_service = foobar_bluetooth_service_new( );
 	self->application_service = foobar_application_service_new( );
+	self->quick_answer_service = foobar_quick_answer_service_new( );
 	self->configuration_service = foobar_configuration_service_new( );
 
 	// Enforce a uniform style by forcing Adwaita and shipping our own icons.
@@ -231,6 +234,7 @@ void foobar_application_activate( GApplication* app )
 
 	self->launcher = foobar_launcher_new(
 		self->application_service,
+		self->quick_answer_service,
 		self->configuration_service );
 	g_object_ref( self->launcher );
 
@@ -358,6 +362,7 @@ void foobar_application_finalize( GObject* object )
 	g_clear_object( &self->network_service );
 	g_clear_object( &self->bluetooth_service );
 	g_clear_object( &self->application_service );
+	g_clear_object( &self->quick_answer_service );
 	g_clear_object( &self->configuration_service );
 	g_clear_object( &self->style_provider );
 	g_clear_object( &self->server_skeleton );

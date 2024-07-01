@@ -4,6 +4,7 @@ foobar_sources = files(
   'utils.c',
   'panel.c',
   'launcher.c',
+  'launcher-item.c',
   'control-center.c',
   'notification-area.c',
 )

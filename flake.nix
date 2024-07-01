@@ -30,6 +30,7 @@
               pkgs.clang-tools
             ];
             inputsFrom = [ foobar ];
+            hardeningDisable = [ "fortify" ];
           };
         };
       });

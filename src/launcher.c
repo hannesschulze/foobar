@@ -1,4 +1,5 @@
 #include "launcher.h"
+#include "launcher-item.h"
 #include "widgets/limit-container.h"
 #include <gtk4-layer-shell.h>
 #include <gdk/gdkkeysyms.h>
@@ -21,8 +22,11 @@ struct _FoobarLauncher
 	GtkWidget*                  list_view;
 	GtkWidget*                  limit_container;
 	GtkFilterListModel*         filter_model;
+	GListStore*                 quick_answer_model;
+	GtkFlattenListModel*        flatten_model;
 	GtkSingleSelection*         selection_model;
 	FoobarApplicationService*   application_service;
+	FoobarQuickAnswerService*   quick_answer_service;
 	FoobarConfigurationService* configuration_service;
 	gulong                      config_handler_id;
 };
@@ -119,9 +123,28 @@ void foobar_launcher_init( FoobarLauncher* self )
 
 	GtkWidget *separator = gtk_separator_new( GTK_ORIENTATION_HORIZONTAL );
 
+	// Set up the results list view and an event controller for auto-switching focus to the input.
+
+	GtkListItemFactory* item_factory = gtk_signal_list_item_factory_new( );
+	g_signal_connect( item_factory, "setup", G_CALLBACK( foobar_launcher_handle_item_setup ), NULL );
+
+	GtkCustomFilter* filter = gtk_custom_filter_new( foobar_launcher_filter_func, self, NULL );
+
+	self->filter_model = gtk_filter_list_model_new( NULL, GTK_FILTER( filter ) );
+
+	self->quick_answer_model = g_list_store_new( FOOBAR_TYPE_LAUNCHER_ITEM );
+
+	GListStore* flattened_models = g_list_store_new( G_TYPE_LIST_MODEL );
+	g_list_store_append( flattened_models, self->quick_answer_model );
+	g_list_store_append( flattened_models, self->filter_model );
+
+	self->flatten_model = gtk_flatten_list_model_new( G_LIST_MODEL( flattened_models ) );
+
+	self->selection_model = gtk_single_selection_new( G_LIST_MODEL( g_object_ref( self->flatten_model ) ) );
+
 	{
-		GtkExpression* list_expr = gtk_constant_expression_new( GTK_TYPE_FILTER_LIST_MODEL, self->filter_model );
-		GtkExpression* count_expr = gtk_property_expression_new( GTK_TYPE_FILTER_LIST_MODEL, list_expr, "n-items" );
+		GtkExpression* list_expr = gtk_constant_expression_new( GTK_TYPE_FLATTEN_LIST_MODEL, self->flatten_model );
+		GtkExpression* count_expr = gtk_property_expression_new( GTK_TYPE_FLATTEN_LIST_MODEL, list_expr, "n-items" );
 		GtkExpression* visible_params[] = { count_expr };
 		GtkExpression* visible_expr = gtk_cclosure_expression_new(
 			G_TYPE_BOOLEAN,
@@ -133,17 +156,6 @@ void foobar_launcher_init( FoobarLauncher* self )
 			NULL );
 		gtk_expression_bind( visible_expr, separator, "visible", NULL );
 	}
-
-	// Set up the results list view and an event controller for auto-switching focus to the input.
-
-	GtkListItemFactory* item_factory = gtk_signal_list_item_factory_new( );
-	g_signal_connect( item_factory, "setup", G_CALLBACK( foobar_launcher_handle_item_setup ), NULL );
-
-	GtkCustomFilter* filter = gtk_custom_filter_new( foobar_launcher_filter_func, self, NULL );
-
-	self->filter_model = gtk_filter_list_model_new( NULL, GTK_FILTER( filter ) );
-
-	self->selection_model = gtk_single_selection_new( G_LIST_MODEL( g_object_ref( self->filter_model ) ) );
 
 	GtkEventController* list_controller = gtk_event_controller_key_new( );
 	g_signal_connect( list_controller, "key-pressed", G_CALLBACK( foobar_launcher_handle_list_key ), self );
@@ -201,8 +213,11 @@ void foobar_launcher_finalize( GObject* object )
 
 	g_clear_signal_handler( &self->config_handler_id, self->configuration_service );
 	g_clear_object( &self->filter_model );
+	g_clear_object( &self->quick_answer_model );
+	g_clear_object( &self->flatten_model );
 	g_clear_object( &self->selection_model );
 	g_clear_object( &self->application_service );
+	g_clear_object( &self->quick_answer_service );
 	g_clear_object( &self->configuration_service );
 	g_clear_pointer( &self->search_terms, g_strfreev );
 
@@ -218,13 +233,16 @@ void foobar_launcher_finalize( GObject* object )
 //
 FoobarLauncher* foobar_launcher_new(
 	FoobarApplicationService*   application_service,
+	FoobarQuickAnswerService*   quick_answer_service,
 	FoobarConfigurationService* configuration_service )
 {
 	g_return_val_if_fail( FOOBAR_IS_APPLICATION_SERVICE( application_service ), NULL );
+	g_return_val_if_fail( FOOBAR_IS_QUICK_ANSWER_SERVICE( quick_answer_service ), NULL );
 	g_return_val_if_fail( FOOBAR_IS_CONFIGURATION_SERVICE( configuration_service ), NULL );
 
 	FoobarLauncher* self = g_object_new( FOOBAR_TYPE_LAUNCHER, NULL );
 	self->application_service = g_object_ref( application_service );
+	self->quick_answer_service = g_object_ref( quick_answer_service );
 	self->configuration_service = g_object_ref( configuration_service );
 
 	// Set up the result list view's source model.
@@ -298,6 +316,17 @@ void foobar_launcher_handle_search_changed(
 	gpointer     userdata )
 {
 	FoobarLauncher* self = (FoobarLauncher*)userdata;
+
+	// Update quick answer.
+
+	g_autoptr(FoobarQuickAnswer) answer = foobar_quick_answer_service_query( self->quick_answer_service, gtk_editable_get_text( editable ) );
+	g_list_store_remove_all( self->quick_answer_model );
+	if (answer)
+	{
+		g_list_store_append(self->quick_answer_model, answer);
+	}
+
+	// Update filter.
 
 	GStrvBuilder* terms_builder = g_strv_builder_new( );
 	g_autofree gchar* query = g_strdup( gtk_editable_get_text( editable ) );
@@ -416,24 +445,24 @@ void foobar_launcher_handle_item_setup(
 	gtk_widget_set_valign( icon, GTK_ALIGN_CENTER );
 	gtk_widget_add_css_class( icon, "icon" );
 
-	GtkWidget* name = gtk_label_new( NULL );
-	gtk_label_set_justify( GTK_LABEL( name ), GTK_JUSTIFY_LEFT );
-	gtk_label_set_xalign( GTK_LABEL( name ), 0 );
-	gtk_label_set_wrap( GTK_LABEL( name ), FALSE );
-	gtk_label_set_ellipsize( GTK_LABEL( name ), PANGO_ELLIPSIZE_END );
-	gtk_widget_add_css_class( name, "name" );
+	GtkWidget* title = gtk_label_new( NULL );
+	gtk_label_set_justify( GTK_LABEL( title ), GTK_JUSTIFY_LEFT );
+	gtk_label_set_xalign( GTK_LABEL( title ), 0 );
+	gtk_label_set_wrap( GTK_LABEL( title ), FALSE );
+	gtk_label_set_ellipsize( GTK_LABEL( title ), PANGO_ELLIPSIZE_END );
+	gtk_widget_add_css_class( title, "name" );
 
 	GtkWidget* description = gtk_label_new( NULL );
 	gtk_label_set_justify( GTK_LABEL( description ), GTK_JUSTIFY_LEFT );
 	gtk_label_set_xalign( GTK_LABEL( description ), 0 );
-	gtk_label_set_wrap( GTK_LABEL( name ), FALSE );
+	gtk_label_set_wrap( GTK_LABEL( description ), FALSE );
 	gtk_label_set_ellipsize( GTK_LABEL( description ), PANGO_ELLIPSIZE_END );
 	gtk_widget_add_css_class( description, "description" );
 
 	GtkWidget* column = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
 	gtk_widget_set_hexpand( column, TRUE );
 	gtk_widget_set_valign( column, GTK_ALIGN_CENTER );
-	gtk_box_append( GTK_BOX( column ), name );
+	gtk_box_append( GTK_BOX( column ), title );
 	gtk_box_append( GTK_BOX( column ), description );
 
 	GtkWidget* row = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
@@ -447,7 +476,7 @@ void foobar_launcher_handle_item_setup(
 
 	{
 		GtkExpression* item_expr = gtk_property_expression_new( GTK_TYPE_LIST_ITEM, NULL, "item" );
-		GtkExpression* icon_expr = gtk_property_expression_new( FOOBAR_TYPE_APPLICATION_ITEM, item_expr, "icon" );
+		GtkExpression* icon_expr = gtk_property_expression_new( FOOBAR_TYPE_LAUNCHER_ITEM, item_expr, "icon" );
 		gtk_expression_bind( gtk_expression_ref( icon_expr ), icon, "gicon", list_item );
 		GtkExpression* visible_params[] = { icon_expr };
 		GtkExpression* visible_expr = gtk_cclosure_expression_new(
@@ -463,13 +492,13 @@ void foobar_launcher_handle_item_setup(
 
 	{
 		GtkExpression* item_expr = gtk_property_expression_new( GTK_TYPE_LIST_ITEM, NULL, "item" );
-		GtkExpression* name_expr = gtk_property_expression_new( FOOBAR_TYPE_APPLICATION_ITEM, item_expr, "name" );
-		gtk_expression_bind( name_expr, name, "label", list_item );
+		GtkExpression* title_expr = gtk_property_expression_new( FOOBAR_TYPE_LAUNCHER_ITEM, item_expr, "title" );
+		gtk_expression_bind( title_expr, title, "label", list_item );
 	}
 
 	{
 		GtkExpression* item_expr = gtk_property_expression_new( GTK_TYPE_LIST_ITEM, NULL, "item" );
-		GtkExpression* description_expr = gtk_property_expression_new( FOOBAR_TYPE_APPLICATION_ITEM, item_expr, "description" );
+		GtkExpression* description_expr = gtk_property_expression_new( FOOBAR_TYPE_LAUNCHER_ITEM, item_expr, "description" );
 		gtk_expression_bind( gtk_expression_ref( description_expr ), description, "label", list_item );
 		GtkExpression* visible_params[] = { description_expr };
 		GtkExpression* visible_expr = gtk_cclosure_expression_new(
@@ -496,8 +525,8 @@ void foobar_launcher_handle_item_activate(
 	FoobarLauncher* self = (FoobarLauncher*)userdata;
 
 	GListModel* list = G_LIST_MODEL( gtk_list_view_get_model( view ) );
-	FoobarApplicationItem* item = g_list_model_get_item( list, position );
-	foobar_application_item_launch( item );
+	FoobarLauncherItem* item = g_list_model_get_item( list, position );
+	foobar_launcher_item_activate( item );
 	gtk_widget_set_visible( GTK_WIDGET( self ), FALSE );
 }
 
