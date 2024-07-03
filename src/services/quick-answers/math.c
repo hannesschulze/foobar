@@ -444,13 +444,36 @@ gchar* foobar_math_value_to_string( FoobarMathValue value )
 			}
 			if ( actual_decimal_places > 0 )
 			{
-				memmove( &result[len + 1 - decimal_places], &result[len - decimal_places],decimal_places + 1 );
+				memmove( &result[len + 1 - decimal_places], &result[len - decimal_places], decimal_places + 1 );
 				result[len - decimal_places] = '.';
 			}
 			return result;
 		}
 		case FOOBAR_MATH_VALUE_FLOAT:
-			return g_strdup_printf( "%Lf", value.float_value.v );
+		{
+			gchar* result = g_strdup_printf( "%.30Lf", value.float_value.v );
+
+			// trim trailing zeros
+			size_t len = strlen( result );
+			for ( gsize i = 0; i < len; ++i )
+			{
+				if ( result[len - 1 - i] == '.' )
+				{
+					result[len - 1 - i] = '\0';
+					break;
+				}
+				else if ( result[len - 1 - i] == '0' )
+				{
+					result[len - 1 - i] = '\0';
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			return result;
+		}
 		default:
 			g_warn_if_reached( );
 			return NULL;
