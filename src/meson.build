@@ -25,6 +25,7 @@ executable(
     gio_unix_dep,
     gtk_dep,
     json_dep,
+    gmp_dep,
     nm_dep,
     m_dep,
     layershell_dep,

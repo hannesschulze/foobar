@@ -11,3 +11,5 @@ foobar_sources += files(
   'quick-answer-service.c',
   'configuration-service.c',
 )
+
+subdir('quick-answers')

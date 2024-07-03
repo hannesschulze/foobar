@@ -1,4 +1,5 @@
 #include "services/quick-answer-service.h"
+#include "services/quick-answers/math.h"
 #include "launcher-item.h"
 #include <gdk/gdk.h>
 
@@ -302,16 +303,23 @@ FoobarQuickAnswer* foobar_quick_answer_service_query(
 {
 	(void)self;
 
-	if ( !g_strcmp0(query, "2+2") )
+	gsize token_count;
+	g_autofree FoobarMathToken* tokens = foobar_math_lex( query, strlen( query ), &token_count );
+	if ( tokens )
 	{
-		g_autoptr(GIcon) icon = g_themed_icon_new("fluent-calculator-symbolic");
-
-		FoobarQuickAnswer* answer = foobar_quick_answer_new();
-		foobar_quick_answer_set_value(answer, "4");
-		foobar_quick_answer_set_title(answer, "= 4");
-		foobar_quick_answer_set_icon(answer, icon);
-		return answer;
+		FoobarMathExpression* expr = foobar_math_parse( tokens, token_count );
+		if ( expr )
+		{
+			g_print( "---\n" );
+			foobar_math_expression_print( expr, 0 );
+			foobar_math_expression_free( expr );
+		}
 	}
+
+	(void)foobar_quick_answer_new;
+	(void)foobar_quick_answer_set_value;
+	(void)foobar_quick_answer_set_icon;
+	(void)foobar_quick_answer_set_title;
 
 	return NULL;
 }
