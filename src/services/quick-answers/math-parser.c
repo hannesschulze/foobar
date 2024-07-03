@@ -104,7 +104,7 @@ FoobarMathExpression* parser_process(
 			next_op = parser_peek( ctx );
 		}
 
-		lhs = foobar_math_expression_operation( parser_operator( op ), lhs, rhs );
+		lhs = foobar_math_expression_new_operation( parser_operator( op ), lhs, rhs );
 
 		op = parser_peek( ctx );
 		op_precedence = parser_operator_precedence( op );
@@ -148,11 +148,11 @@ FoobarMathExpression* parser_process_identifier( Parser* ctx )
 	FoobarMathToken const* token = parser_pop( ctx );
 	if ( parser_match_identifier( token, "pi" ) )
 	{
-		return foobar_math_expression_constant( FOOBAR_MATH_CONSTANT_PI );
+		return foobar_math_expression_new_constant( FOOBAR_MATH_CONSTANT_PI );
 	}
 	else if ( parser_match_identifier( token, "e" ) )
 	{
-		return foobar_math_expression_constant( FOOBAR_MATH_CONSTANT_E );
+		return foobar_math_expression_new_constant( FOOBAR_MATH_CONSTANT_E );
 	}
 	else if ( parser_match_identifier( token, "exp" ) )
 	{
@@ -219,13 +219,13 @@ FoobarMathExpression* parser_process_identifier( Parser* ctx )
 FoobarMathExpression* parser_process_number( Parser* ctx )
 {
 	FoobarMathToken const* token = parser_pop( ctx );
-	FoobarMathValue value;
+	FoobarMathValue value = { 0 };
 	if ( !foobar_math_value_from_string( token->data, token->length, &value ) )
 	{
 		return NULL;
 	}
 
-	return foobar_math_expression_value( value );
+	return foobar_math_expression_new_value( value );
 }
 
 FoobarMathExpression* parser_process_function(
@@ -241,7 +241,7 @@ FoobarMathExpression* parser_process_function(
 	FoobarMathExpression* arg = parser_process_parens( ctx );
 	if ( !arg ) { return NULL; }
 
-	return foobar_math_expression_function( function, arg );
+	return foobar_math_expression_new_function( function, arg );
 }
 
 FoobarMathExpression* parser_process_parens( Parser* ctx )
@@ -268,7 +268,7 @@ FoobarMathExpression* parser_process_sign( Parser* ctx )
 
 	if ( token->type == FOOBAR_MATH_TOKEN_MINUS )
 	{
-		return foobar_math_expression_function( FOOBAR_MATH_FUNCTION_NEGATE, result );
+		return foobar_math_expression_new_function( FOOBAR_MATH_FUNCTION_NEGATE, result );
 	}
 	else
 	{

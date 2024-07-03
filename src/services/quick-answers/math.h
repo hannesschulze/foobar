@@ -98,27 +98,50 @@ typedef enum
 
 typedef struct _FoobarMathExpression FoobarMathExpression;
 
-FoobarMathToken*      foobar_math_lex                 ( gchar const*                input,
-                                                        gsize                       input_length,
-                                                        gsize*                      out_count );
-FoobarMathExpression* foobar_math_parse               ( FoobarMathToken const*      tokens,
-                                                        gsize                       tokens_count );
-FoobarMathExpression* foobar_math_expression_value    ( FoobarMathValue             value );
-FoobarMathExpression* foobar_math_expression_function ( FoobarMathFunction          function,
-                                                        FoobarMathExpression*       input );
-FoobarMathExpression* foobar_math_expression_constant ( FoobarMathConstant          constant );
-FoobarMathExpression* foobar_math_expression_operation( FoobarMathOperation         operation,
-                                                        FoobarMathExpression*       lhs,
-                                                        FoobarMathExpression*       rhs );
-void                  foobar_math_expression_print    ( FoobarMathExpression const* expr,
-                                                        gint                        indentation );
-void                  foobar_math_expression_free     ( FoobarMathExpression*       expression );
-gboolean              foobar_math_value_from_string   ( gchar const*                input,
-                                                        gsize                       input_length,
-                                                        FoobarMathValue*            out_value );
-void                  foobar_math_value_free          ( FoobarMathValue             value );
-gchar*                foobar_math_value_format        ( FoobarMathValue             value );
-gboolean              foobar_math_evaluate            ( FoobarMathExpression const* expression,
-                                                        FoobarMathValue*            out_value );
+FoobarMathToken*      foobar_math_lex                     ( gchar const*                input,
+                                                            gsize                       input_length,
+                                                            gsize*                      out_count );
+FoobarMathExpression* foobar_math_parse                   ( FoobarMathToken const*      tokens,
+                                                            gsize                       tokens_count );
+FoobarMathExpression* foobar_math_expression_new_value    ( FoobarMathValue             value );
+FoobarMathExpression* foobar_math_expression_new_function ( FoobarMathFunction          function,
+                                                            FoobarMathExpression*       input );
+FoobarMathExpression* foobar_math_expression_new_constant ( FoobarMathConstant          constant );
+FoobarMathExpression* foobar_math_expression_new_operation( FoobarMathOperation         operation,
+                                                            FoobarMathExpression*       lhs,
+                                                            FoobarMathExpression*       rhs );
+void                  foobar_math_expression_print        ( FoobarMathExpression const* expr,
+                                                            gint                        indentation );
+void                  foobar_math_expression_free         ( FoobarMathExpression*       expression );
+void                  foobar_math_value_new_int           ( FoobarMathValue*            out_value );
+gboolean              foobar_math_value_from_string       ( gchar const*                input,
+                                                            gsize                       input_length,
+                                                            FoobarMathValue*            out_value );
+void                  foobar_math_value_from_float        ( long double                 value,
+                                                            FoobarMathValue*            out_value );
+void                  foobar_math_value_copy              ( FoobarMathValue             value,
+                                                            FoobarMathValue*            out_value );
+void                  foobar_math_value_free              ( FoobarMathValue             value );
+void                  foobar_math_value_negate            ( FoobarMathValue*            value );
+gboolean              foobar_math_value_add               ( FoobarMathValue             lhs,
+                                                            FoobarMathValue             rhs,
+                                                            FoobarMathValue*            out_value );
+gboolean              foobar_math_value_sub               ( FoobarMathValue             lhs,
+                                                            FoobarMathValue             rhs,
+                                                            FoobarMathValue*            out_value );
+gboolean              foobar_math_value_mul               ( FoobarMathValue             lhs,
+                                                            FoobarMathValue             rhs,
+                                                            FoobarMathValue*            out_value );
+gboolean              foobar_math_value_div               ( FoobarMathValue             lhs,
+                                                            FoobarMathValue             rhs,
+                                                            FoobarMathValue*            out_value );
+gboolean              foobar_math_value_pow               ( FoobarMathValue             lhs,
+                                                            FoobarMathValue             rhs,
+                                                            FoobarMathValue*            out_value );
+gboolean              foobar_math_value_is_simple_int     ( FoobarMathValue             value );
+gchar*                foobar_math_value_to_string         ( FoobarMathValue             value );
+long double           foobar_math_value_to_float          ( FoobarMathValue             value );
+gboolean              foobar_math_evaluate                ( FoobarMathExpression const* expr,
+                                                            FoobarMathValue*            out_value );
 
 G_END_DECLS

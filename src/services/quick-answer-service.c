@@ -53,8 +53,9 @@ struct _FoobarQuickAnswerService
 	GObject parent_instance;
 };
 
-static void foobar_quick_answer_service_class_init( FoobarQuickAnswerServiceClass* klass );
-static void foobar_quick_answer_service_init      ( FoobarQuickAnswerService*      self );
+static void               foobar_quick_answer_service_class_init( FoobarQuickAnswerServiceClass* klass );
+static void               foobar_quick_answer_service_init      ( FoobarQuickAnswerService*      self );
+static FoobarQuickAnswer* foobar_quick_answer_service_query_math( gchar const*                   query );
 
 G_DEFINE_FINAL_TYPE( FoobarQuickAnswerService, foobar_quick_answer_service, G_TYPE_OBJECT )
 
@@ -303,6 +304,19 @@ FoobarQuickAnswer* foobar_quick_answer_service_query(
 {
 	(void)self;
 
+	FoobarQuickAnswer* result = foobar_quick_answer_service_query_math( query );
+	if ( result ) { return result; }
+
+	return NULL;
+}
+
+//
+// Try to parse the query as a mathematical expression and evaluate it.
+//
+FoobarQuickAnswer* foobar_quick_answer_service_query_math( gchar const* query )
+{
+	FoobarQuickAnswer* result = NULL;
+
 	gsize token_count;
 	g_autofree FoobarMathToken* tokens = foobar_math_lex( query, strlen( query ), &token_count );
 	if ( tokens )
@@ -310,16 +324,24 @@ FoobarQuickAnswer* foobar_quick_answer_service_query(
 		FoobarMathExpression* expr = foobar_math_parse( tokens, token_count );
 		if ( expr )
 		{
-			g_print( "---\n" );
 			foobar_math_expression_print( expr, 0 );
+
+			FoobarMathValue val = { 0 };
+			if ( foobar_math_evaluate( expr, &val ) )
+			{
+				g_autofree gchar* value = foobar_math_value_to_string( val );
+				g_autofree gchar* title = g_strdup_printf( "= %s", value );
+				g_autoptr( GIcon ) icon = g_themed_icon_new( "fluent-calculator-symbolic" );
+				result = foobar_quick_answer_new( );
+				foobar_quick_answer_set_value( result, value );
+				foobar_quick_answer_set_title( result, title );
+				foobar_quick_answer_set_icon( result, icon );
+				foobar_math_value_free( val );
+			}
+
 			foobar_math_expression_free( expr );
 		}
 	}
 
-	(void)foobar_quick_answer_new;
-	(void)foobar_quick_answer_set_value;
-	(void)foobar_quick_answer_set_icon;
-	(void)foobar_quick_answer_set_title;
-
-	return NULL;
+	return result;
 }
