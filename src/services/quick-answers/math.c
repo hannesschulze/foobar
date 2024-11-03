@@ -310,72 +310,81 @@ void foobar_math_value_negate( FoobarMathValue* value )
 }
 
 gboolean foobar_math_value_add(
-	FoobarMathValue  lhs,
-	FoobarMathValue  rhs,
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
 	FoobarMathValue* out_value )
 {
-	if ( foobar_math_value_is_simple_int( lhs ) && foobar_math_value_is_simple_int( rhs ) )
+	if ( foobar_math_value_unify_integers( lhs, rhs ) )
 	{
 		foobar_math_value_new_int( out_value );
-		mpz_add( out_value->int_value.v, lhs.int_value.v, rhs.int_value.v );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places;
+		mpz_add( out_value->int_value.v, lhs->int_value.v, rhs->int_value.v );
 		return TRUE;
 	}
 
-	long double lhs_float = foobar_math_value_to_float( lhs );
-	long double rhs_float = foobar_math_value_to_float( rhs );
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
 	foobar_math_value_from_float( lhs_float + rhs_float, out_value );
 	return TRUE;
 }
 
 gboolean foobar_math_value_sub(
-	FoobarMathValue  lhs,
-	FoobarMathValue  rhs,
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
 	FoobarMathValue* out_value )
 {
-	if ( foobar_math_value_is_simple_int( lhs ) && foobar_math_value_is_simple_int( rhs ) )
+	if ( foobar_math_value_unify_integers( lhs, rhs ) )
 	{
 		foobar_math_value_new_int( out_value );
-		mpz_sub( out_value->int_value.v, lhs.int_value.v, rhs.int_value.v );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places;
+		mpz_sub( out_value->int_value.v, lhs->int_value.v, rhs->int_value.v );
 		return TRUE;
 	}
 
-	long double lhs_float = foobar_math_value_to_float( lhs );
-	long double rhs_float = foobar_math_value_to_float( rhs );
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
 	foobar_math_value_from_float( lhs_float - rhs_float, out_value );
 	return TRUE;
 }
 
 gboolean foobar_math_value_mul(
-	FoobarMathValue  lhs,
-	FoobarMathValue  rhs,
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
 	FoobarMathValue* out_value )
 {
-	if ( foobar_math_value_is_simple_int( lhs ) && foobar_math_value_is_simple_int( rhs ) )
+	if ( lhs->type == FOOBAR_MATH_VALUE_INT && rhs->type == FOOBAR_MATH_VALUE_INT )
 	{
 		foobar_math_value_new_int( out_value );
-		mpz_mul( out_value->int_value.v, lhs.int_value.v, rhs.int_value.v );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places + rhs->int_value.decimal_places;
+		mpz_mul( out_value->int_value.v, lhs->int_value.v, rhs->int_value.v );
 		return TRUE;
 	}
 
-	long double lhs_float = foobar_math_value_to_float( lhs );
-	long double rhs_float = foobar_math_value_to_float( rhs );
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
 	foobar_math_value_from_float( lhs_float * rhs_float, out_value );
 	return TRUE;
 }
 
 gboolean foobar_math_value_div(
-	FoobarMathValue  lhs,
-	FoobarMathValue  rhs,
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
 	FoobarMathValue* out_value )
 {
-	if ( foobar_math_value_is_simple_int( lhs ) && foobar_math_value_is_simple_int( rhs ) )
+	if ( lhs->type == FOOBAR_MATH_VALUE_INT && rhs->type == FOOBAR_MATH_VALUE_INT )
 	{
-		if ( mpz_sgn( rhs.int_value.v ) == 0 ) { return FALSE; }
+		if ( mpz_sgn( rhs->int_value.v ) == 0 ) { return FALSE; }
+
+		if ( rhs->int_value.decimal_places > lhs->int_value.decimal_places )
+		{
+			foobar_math_value_unify_integers( lhs, rhs );
+		}
 
 		foobar_math_value_new_int( out_value );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places - rhs->int_value.decimal_places;
 		mpz_t rem;
 		mpz_init( rem );
-		mpz_divmod( out_value->int_value.v, rem, lhs.int_value.v, rhs.int_value.v );
+		mpz_divmod( out_value->int_value.v, rem, lhs->int_value.v, rhs->int_value.v );
 		gboolean result_is_int = mpz_sgn( rem ) == 0;
 		mpz_clear( rem );
 
@@ -383,8 +392,8 @@ gboolean foobar_math_value_div(
 		foobar_math_value_free( *out_value );
 	}
 
-	long double lhs_float = foobar_math_value_to_float( lhs );
-	long double rhs_float = foobar_math_value_to_float( rhs );
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
 	long double result = lhs_float / rhs_float;
 	if ( isnanl( result ) || isinfl( result ) ) { return FALSE; }
 	foobar_math_value_from_float( result, out_value );
@@ -392,29 +401,60 @@ gboolean foobar_math_value_div(
 }
 
 gboolean foobar_math_value_pow(
-	FoobarMathValue  lhs,
-	FoobarMathValue  rhs,
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
 	FoobarMathValue* out_value )
 {
-	if ( foobar_math_value_is_simple_int( lhs ) && foobar_math_value_is_simple_int( rhs ) &&
-			mpz_fits_ulong_p( rhs.int_value.v ) )
+	if ( lhs->type == FOOBAR_MATH_VALUE_INT &&
+			rhs->type == FOOBAR_MATH_VALUE_INT &&
+			rhs->int_value.decimal_places == 0 &&
+			mpz_fits_ulong_p( rhs->int_value.v ) )
 	{
+		unsigned long exp = mpz_get_ui( rhs->int_value.v );
 		foobar_math_value_new_int( out_value );
-		mpz_pow_ui( out_value->int_value.v, lhs.int_value.v, mpz_get_ui( rhs.int_value.v ) );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places * exp;
+		mpz_pow_ui( out_value->int_value.v, lhs->int_value.v, exp );
 		return TRUE;
 	}
 
-	long double lhs_float = foobar_math_value_to_float( lhs );
-	long double rhs_float = foobar_math_value_to_float( rhs );
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
 	long double result = powl( lhs_float, rhs_float );
 	if ( isnanl( result ) || isinfl( result ) ) { return FALSE; }
 	foobar_math_value_from_float( result, out_value );
 	return TRUE;
 }
 
-gboolean foobar_math_value_is_simple_int( FoobarMathValue value )
+gboolean foobar_math_value_unify_integers(
+	FoobarMathValue* a,
+	FoobarMathValue* b )
 {
-	return value.type == FOOBAR_MATH_VALUE_INT && value.int_value.decimal_places == 0;
+	if ( a->type != FOOBAR_MATH_VALUE_INT || b->type != FOOBAR_MATH_VALUE_INT ) { return FALSE; }
+
+	// Extend the less precise representation so both numbers have the same number of decimal places.
+
+	gsize decimal_places = MAX( a->int_value.decimal_places, b->int_value.decimal_places );
+
+	mpz_t exp;
+	mpz_init( exp );
+
+	if ( decimal_places > a->int_value.decimal_places )
+	{
+		mpz_ui_pow_ui( exp, 10, decimal_places - a->int_value.decimal_places );
+		mpz_mul( a->int_value.v, a->int_value.v, exp );
+	}
+
+	if ( decimal_places > b->int_value.decimal_places )
+	{
+		mpz_ui_pow_ui( exp, 10, decimal_places - b->int_value.decimal_places );
+		mpz_mul( b->int_value.v, b->int_value.v, exp );
+	}
+
+	mpz_clear( exp );
+
+	a->int_value.decimal_places = b->int_value.decimal_places = decimal_places;
+
+	return TRUE;
 }
 
 gchar* foobar_math_value_to_string( FoobarMathValue value )
@@ -423,10 +463,23 @@ gchar* foobar_math_value_to_string( FoobarMathValue value )
 	{
 		case FOOBAR_MATH_VALUE_INT:
 		{
-			size_t len = mpz_sizeinbase( value.int_value.v, 10 );
-			gchar* result = g_new0( gchar, len + 3 ); // length + null terminator + sign + separator
+			gsize cap = mpz_sizeinbase( value.int_value.v, 10 );
+			cap = MAX( cap, value.int_value.decimal_places + 1 ); // pad with zeroes if necessary
+			gchar* result = g_new0( gchar, cap + 3 ); // length + null terminator + sign + separator
 			mpz_get_str( result, 10, value.int_value.v );
-			len = strlen( result );
+			gsize len = strlen( result ); // actual size may be 1 char less (+ len now also includes sign)
+			gboolean has_sign = result[0] == '-';
+			if ( has_sign )
+			{
+				// add the sign back later, makes everything else easier
+				result += 1;
+				len -= 1;
+			}
+			// pad with leading zeroes if necessary
+			gsize padded_len = MAX( len, value.int_value.decimal_places + 1 );
+			memmove( &result[padded_len - len], result, len + 1 );
+			memset( result, '0', padded_len - len );
+			len = padded_len;
 			gboolean trailing_zeros = TRUE;
 			gsize decimal_places = value.int_value.decimal_places;
 			gsize actual_decimal_places = decimal_places;
@@ -446,6 +499,11 @@ gchar* foobar_math_value_to_string( FoobarMathValue value )
 			{
 				memmove( &result[len + 1 - decimal_places], &result[len - decimal_places], decimal_places + 1 );
 				result[len - decimal_places] = '.';
+			}
+			if ( has_sign )
+			{
+				result -= 1;
+				len += 1;
 			}
 			return result;
 		}
@@ -617,19 +675,19 @@ gboolean foobar_math_evaluate(
 			switch ( expr->operation.o )
 			{
 				case FOOBAR_MATH_OPERATION_ADD:
-					success = foobar_math_value_add( lhs, rhs, out_value );
+					success = foobar_math_value_add( &lhs, &rhs, out_value );
 					break;
 				case FOOBAR_MATH_OPERATION_SUB:
-					success = foobar_math_value_sub( lhs, rhs, out_value );
+					success = foobar_math_value_sub( &lhs, &rhs, out_value );
 					break;
 				case FOOBAR_MATH_OPERATION_MUL:
-					success = foobar_math_value_mul( lhs, rhs, out_value );
+					success = foobar_math_value_mul( &lhs, &rhs, out_value );
 					break;
 				case FOOBAR_MATH_OPERATION_DIV:
-					success = foobar_math_value_div( lhs, rhs, out_value );
+					success = foobar_math_value_div( &lhs, &rhs, out_value );
 					break;
 				case FOOBAR_MATH_OPERATION_POW:
-					success = foobar_math_value_pow( lhs, rhs, out_value );
+					success = foobar_math_value_pow( &lhs, &rhs, out_value );
 					break;
 				default:
 					g_warn_if_reached( );

@@ -3,6 +3,12 @@
 #include "launcher-item.h"
 #include <gdk/gdk.h>
 
+//
+// FoobarQuickAnswer:
+//
+// A launcher item representing a quick, one-line answer to the query entered by the user.
+//
+
 struct _FoobarQuickAnswer
 {
 	GObject parent_instance;
@@ -47,6 +53,13 @@ G_DEFINE_FINAL_TYPE_WITH_CODE(
 	foobar_quick_answer,
 	G_TYPE_OBJECT,
 	G_IMPLEMENT_INTERFACE( FOOBAR_TYPE_LAUNCHER_ITEM, foobar_quick_answer_launcher_item_interface_init ) )
+
+//
+// FoobarQuickAnswerService:
+//
+// Service providing quick answers for search queries in the launcher (if available). This includes evaluating
+// mathematical expressions.
+//
 
 struct _FoobarQuickAnswerService
 {
@@ -324,7 +337,7 @@ FoobarQuickAnswer* foobar_quick_answer_service_query_math( gchar const* query )
 		FoobarMathExpression* expr = foobar_math_parse( tokens, token_count );
 		if ( expr )
 		{
-			foobar_math_expression_print( expr, 0 );
+			// foobar_math_expression_print( expr, 0 );
 
 			FoobarMathValue val = { 0 };
 			if ( foobar_math_evaluate( expr, &val ) )

@@ -123,22 +123,23 @@ void                  foobar_math_value_copy              ( FoobarMathValue     
                                                             FoobarMathValue*            out_value );
 void                  foobar_math_value_free              ( FoobarMathValue             value );
 void                  foobar_math_value_negate            ( FoobarMathValue*            value );
-gboolean              foobar_math_value_add               ( FoobarMathValue             lhs,
-                                                            FoobarMathValue             rhs,
+gboolean              foobar_math_value_add               ( FoobarMathValue*            lhs,
+                                                            FoobarMathValue*            rhs,
                                                             FoobarMathValue*            out_value );
-gboolean              foobar_math_value_sub               ( FoobarMathValue             lhs,
-                                                            FoobarMathValue             rhs,
+gboolean              foobar_math_value_sub               ( FoobarMathValue*            lhs,
+                                                            FoobarMathValue*            rhs,
                                                             FoobarMathValue*            out_value );
-gboolean              foobar_math_value_mul               ( FoobarMathValue             lhs,
-                                                            FoobarMathValue             rhs,
+gboolean              foobar_math_value_mul               ( FoobarMathValue*            lhs,
+                                                            FoobarMathValue*            rhs,
                                                             FoobarMathValue*            out_value );
-gboolean              foobar_math_value_div               ( FoobarMathValue             lhs,
-                                                            FoobarMathValue             rhs,
+gboolean              foobar_math_value_div               ( FoobarMathValue*            lhs,
+                                                            FoobarMathValue*            rhs,
                                                             FoobarMathValue*            out_value );
-gboolean              foobar_math_value_pow               ( FoobarMathValue             lhs,
-                                                            FoobarMathValue             rhs,
+gboolean              foobar_math_value_pow               ( FoobarMathValue*            lhs,
+                                                            FoobarMathValue*            rhs,
                                                             FoobarMathValue*            out_value );
-gboolean              foobar_math_value_is_simple_int     ( FoobarMathValue             value );
+gboolean              foobar_math_value_unify_integers    ( FoobarMathValue*            a,
+                                                            FoobarMathValue*            b );
 gchar*                foobar_math_value_to_string         ( FoobarMathValue             value );
 long double           foobar_math_value_to_float          ( FoobarMathValue             value );
 gboolean              foobar_math_evaluate                ( FoobarMathExpression const* expr,

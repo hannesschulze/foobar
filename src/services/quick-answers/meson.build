@@ -3,3 +3,7 @@ foobar_sources += files(
   'math-parser.c',
   'math.c',
 )
+
+foobar_tests += {
+  'math': files('math.test.c'),
+}

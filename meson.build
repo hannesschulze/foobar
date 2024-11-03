@@ -10,16 +10,22 @@ json_dep = dependency('json-glib-1.0', version: '>=1.8')
 nm_dep = dependency('libnm', version: '>=1.44')
 gmp_dep = dependency('gmp', version: '>=6.3')
 m_dep = meson.get_compiler('c').find_library('m', required : false)
-layershell_dep = dependency('gtk4-layer-shell', required: false)
-gvc_dep = dependency('gvc', required: false)
-if not layershell_dep.found()
-  layershell_proj = subproject('gtk4-layer-shell')
-  layershell_dep = layershell_proj.get_variable('gtk_layer_shell')
-endif
-if not gvc_dep.found()
-  gvc_proj = subproject('gvc')
-  gvc_dep = gvc_proj.get_variable('libgvc_dep')
-endif
+layershell_dep = dependency(
+  'gtk4-layer-shell',
+  fallback: [ 'gtk4-layer-shell', 'gtk_layer_shell' ],
+  default_options: [ 'default_library=static' ],
+)
+gvc_dep = dependency(
+  'gvc',
+  fallback: [ 'gvc', 'libgvc_dep' ],
+  default_options: [ 'default_library=static' ],
+)
+mutest_dep = dependency(
+  'mutest',
+  fallback: [ 'mutest', 'mutest_dep' ],
+  default_options: [ 'static=true' ],
+  required: false,
+)
 
 subdir('res')
 subdir('src')

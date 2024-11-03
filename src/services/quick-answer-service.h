@@ -16,6 +16,6 @@ G_DECLARE_FINAL_TYPE( FoobarQuickAnswerService, foobar_quick_answer_service, FOO
 
 FoobarQuickAnswerService* foobar_quick_answer_service_new      ( void );
 FoobarQuickAnswer*        foobar_quick_answer_service_query    ( FoobarQuickAnswerService* self,
-																 gchar const* query );
+                                                                 gchar const*              query );
 
 G_END_DECLS
