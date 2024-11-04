@@ -1,5 +1,11 @@
 #include "services/quick-answers/math.h"
 
+//
+// Parser:
+//
+// The parser context/state which is passed around.
+//
+
 typedef struct _Parser Parser;
 
 struct _Parser
@@ -8,6 +14,12 @@ struct _Parser
 	gsize                  tokens_count;
 	gsize                  position;
 };
+
+//
+// InfixPrecedence:
+//
+// Value indicating how strongly infix operators should bind. The higher the value, the stronger they should bind.
+//
 
 typedef enum
 {
@@ -18,8 +30,6 @@ typedef enum
 	INFIX_PRECEDENCE_EXPONENTS      = 3,
 } InfixPrecedence;
 
-static FoobarMathToken const* parser_peek               ( Parser const*          ctx );
-static FoobarMathToken const* parser_pop                ( Parser*                ctx );
 static FoobarMathExpression*  parser_process            ( Parser*                ctx,
                                                           FoobarMathExpression*  lhs,
                                                           InfixPrecedence        min_precedence );
@@ -31,11 +41,24 @@ static FoobarMathExpression*  parser_process_function   ( Parser*               
                                                           FoobarMathFunction     function );
 static FoobarMathExpression*  parser_process_parens     ( Parser*                ctx );
 static FoobarMathExpression*  parser_process_sign       ( Parser*                ctx );
+static FoobarMathToken const* parser_peek               ( Parser const*          ctx );
+static FoobarMathToken const* parser_pop                ( Parser*                ctx );
 static gboolean               parser_match_identifier   ( FoobarMathToken const* token,
                                                           gchar const*           identifier );
 static InfixPrecedence        parser_operator_precedence( FoobarMathToken const* token );
 static FoobarMathOperation    parser_operator           ( FoobarMathToken const* token );
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Parsing
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Transform a sequence of tokens into a mathematical expression.
+//
+// On success, this will return a newly allocated expression which should be freed using foobar_math_expression_free.
+//
+// On error, this will return NULL.
+//
 FoobarMathExpression* foobar_math_parse(
 	FoobarMathToken const* tokens,
 	gsize                  tokens_count )
@@ -59,20 +82,9 @@ FoobarMathExpression* foobar_math_parse(
 	return expr;
 }
 
-FoobarMathToken const* parser_peek( Parser const* ctx )
-{
-	if ( ctx->position >= ctx->tokens_count ) { return NULL; }
-
-	return &ctx->tokens[ctx->position];
-}
-
-FoobarMathToken const* parser_pop( Parser* ctx )
-{
-	if ( ctx->position >= ctx->tokens_count ) { return NULL; }
-
-	return &ctx->tokens[ctx->position++];
-}
-
+//
+// Process tokens until the end of the current precedence scope (indicated by min_precedence), starting at an operator.
+//
 FoobarMathExpression* parser_process(
 	Parser*               ctx,
 	FoobarMathExpression* lhs,
@@ -113,6 +125,12 @@ FoobarMathExpression* parser_process(
 	return lhs;
 }
 
+//
+// Process a single value which may be either a constant, function, number, expression enclosed in parenthesis or
+// negation.
+//
+// If an unexpected token is encountered (i.e. an operator), this will return FALSE.
+//
 FoobarMathExpression* parser_process_single(
 	Parser*  ctx,
 	gboolean allow_sign )
@@ -143,6 +161,11 @@ FoobarMathExpression* parser_process_single(
 	}
 }
 
+//
+// Parse an identifier.
+//
+// If the identifier is a function, this will expected parenthesis and an expression afterwards.
+//
 FoobarMathExpression* parser_process_identifier( Parser* ctx )
 {
 	FoobarMathToken const* token = parser_pop( ctx );
@@ -216,6 +239,9 @@ FoobarMathExpression* parser_process_identifier( Parser* ctx )
 	}
 }
 
+//
+// Process a numeric value.
+//
 FoobarMathExpression* parser_process_number( Parser* ctx )
 {
 	FoobarMathToken const* token = parser_pop( ctx );
@@ -228,6 +254,9 @@ FoobarMathExpression* parser_process_number( Parser* ctx )
 	return foobar_math_expression_new_value( value );
 }
 
+//
+// Process a function's parameter which should be enclosed in parenthesis.
+//
 FoobarMathExpression* parser_process_function(
 	Parser*            ctx,
 	FoobarMathFunction function )
@@ -244,6 +273,9 @@ FoobarMathExpression* parser_process_function(
 	return foobar_math_expression_new_function( function, arg );
 }
 
+//
+// Process an expression enclosed in parenthesis.
+//
 FoobarMathExpression* parser_process_parens( Parser* ctx )
 {
 	parser_pop( ctx );
@@ -260,6 +292,9 @@ FoobarMathExpression* parser_process_parens( Parser* ctx )
 	return result;
 }
 
+//
+// Process a sign (- or +) which may be used for negation of an expression.
+//
 FoobarMathExpression* parser_process_sign( Parser* ctx )
 {
 	FoobarMathToken const* token = parser_pop( ctx );
@@ -276,6 +311,43 @@ FoobarMathExpression* parser_process_sign( Parser* ctx )
 	}
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// State Helpers
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Peek at the current token without consuming it.
+//
+// If this is the end of the token list, return NULL.
+//
+FoobarMathToken const* parser_peek( Parser const* ctx )
+{
+	if ( ctx->position >= ctx->tokens_count ) { return NULL; }
+
+	return &ctx->tokens[ctx->position];
+}
+
+//
+// Consume the current token.
+//
+// If this is the end of the token list, return NULL.
+//
+FoobarMathToken const* parser_pop( Parser* ctx )
+{
+	if ( ctx->position >= ctx->tokens_count ) { return NULL; }
+
+	return &ctx->tokens[ctx->position++];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Match a token's string against the given identifier string.
+//
+// This is necessary because the token's content is not a null-terminated string.
+//
 gboolean parser_match_identifier(
 	FoobarMathToken const* token,
 	gchar const*           identifier )
@@ -285,6 +357,9 @@ gboolean parser_match_identifier(
 	return !strncmp( token->data, identifier, token->length );
 }
 
+//
+// Get the precedence of an infix operator token or INVALID.
+//
 InfixPrecedence parser_operator_precedence( FoobarMathToken const* token )
 {
 	if ( token )
@@ -311,6 +386,9 @@ InfixPrecedence parser_operator_precedence( FoobarMathToken const* token )
 	return INFIX_PRECEDENCE_INVALID;
 }
 
+//
+// Get the operation for an infix operator token. This requires the token to be valid.
+//
 FoobarMathOperation parser_operator( FoobarMathToken const* token )
 {
 	switch ( token->type )

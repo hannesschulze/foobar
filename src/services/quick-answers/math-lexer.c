@@ -1,5 +1,24 @@
 #include "services/quick-answers/math.h"
 
+//
+// FoobarMathToken:
+//
+// A token in a mathematical expression. The token contents are left as-is and need not be null-terminated. For example,
+// "sin(pi) - 3" would be represented as:
+//  - IDENTIFIER: "sin"
+//  - PAREN_OPEN: "("
+//  - IDENTIFIER: "pi"
+//  - PAREN_CLOSE: ")"
+//  - MINUS: "-"
+//  - NUMBER: "3"
+//
+
+//
+// Lexer:
+//
+// The lexer context/state which is passed around.
+//
+
 typedef struct _Lexer Lexer;
 
 struct _Lexer
@@ -24,6 +43,18 @@ static void lexer_commit_token ( Lexer*              ctx,
 static void lexer_commit_single( Lexer*              ctx,
                                  FoobarMathTokenType type );
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Lexing
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Divide an input string into a list of tokens.
+//
+// On success, this will return a newly allocated array of tokens which should be freed using g_free. The number of
+// elements will be written into out_count.
+//
+// On error, this will return NULL.
+//
 FoobarMathToken* foobar_math_lex(
 	gchar const* input,
 	gsize        input_length,
@@ -115,16 +146,29 @@ FoobarMathToken* foobar_math_lex(
 	return g_array_steal( result, out_count );
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Character Classification
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Check if a character is a whitespace symbol (space, tab, carriage return).
+//
 gboolean char_is_whitespace( char c )
 {
 	return c == ' ' || c == '\t' || c == '\r';
 }
 
+//
+// Check if a character is a decimal digit.
+//
 gboolean char_is_digit( char c )
 {
 	return c >= '0' && c <= '9';
 }
 
+//
+// Check if a character belongs to an identifier (like "sin", "pi", etc.).
+//
 gboolean char_is_identifier( char c )
 {
 	// Identifiers are all lowercase ASCII.
@@ -132,6 +176,15 @@ gboolean char_is_identifier( char c )
 	return c >= 'a' && c <= 'z';
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// State Helpers
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Peek at the current character without consuming it.
+//
+// If this is the end of the input string, return 0.
+//
 char lexer_peek(
 	Lexer const* ctx,
 	gsize        offset )
@@ -142,6 +195,11 @@ char lexer_peek(
 	return ctx->input[position];
 }
 
+//
+// Consume the current character, moving forward to the next one.
+//
+// If this is the end of the input string, return 0.
+//
 char lexer_pop( Lexer* ctx )
 {
 	if ( ctx->position >= ctx->input_length ) { return 0; }
@@ -149,11 +207,21 @@ char lexer_pop( Lexer* ctx )
 	return ctx->input[ctx->position++];
 }
 
+//
+// Start recording a token by remembering the current position.
+//
+// The current character will be the first one in the token.
+//
 void lexer_begin_token( Lexer* ctx )
 {
 	ctx->token_start = ctx->position;
 }
 
+//
+// Stop recording a token, saving the string between the call to lexer_begin_token as the specified type.
+//
+// The current character will not be a part of the token.
+//
 void lexer_commit_token(
 	Lexer*              ctx,
 	FoobarMathTokenType type )
@@ -165,6 +233,11 @@ void lexer_commit_token(
 	g_array_append_val( ctx->result, token );
 }
 
+//
+// Consume the current character and record it as a token.
+//
+// This is equivalent to calling lexer_begin_token, lexer_pop, and lexer_commit_token.
+//
 void lexer_commit_single(
 	Lexer*              ctx,
 	FoobarMathTokenType type )

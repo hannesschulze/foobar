@@ -112,12 +112,14 @@ FoobarMathExpression* foobar_math_expression_new_operation( FoobarMathOperation 
                                                             FoobarMathExpression*       rhs );
 void                  foobar_math_expression_print        ( FoobarMathExpression const* expr,
                                                             gint                        indentation );
+gboolean              foobar_math_evaluate                ( FoobarMathExpression const* expr,
+                                                            FoobarMathValue*            out_value );
 void                  foobar_math_expression_free         ( FoobarMathExpression*       expression );
 void                  foobar_math_value_new_int           ( FoobarMathValue*            out_value );
+void                  foobar_math_value_from_float        ( long double                 value,
+                                                            FoobarMathValue*            out_value );
 gboolean              foobar_math_value_from_string       ( gchar const*                input,
                                                             gsize                       input_length,
-                                                            FoobarMathValue*            out_value );
-void                  foobar_math_value_from_float        ( long double                 value,
                                                             FoobarMathValue*            out_value );
 void                  foobar_math_value_copy              ( FoobarMathValue             value,
                                                             FoobarMathValue*            out_value );
@@ -142,7 +144,5 @@ gboolean              foobar_math_value_unify_integers    ( FoobarMathValue*    
                                                             FoobarMathValue*            b );
 gchar*                foobar_math_value_to_string         ( FoobarMathValue             value );
 long double           foobar_math_value_to_float          ( FoobarMathValue             value );
-gboolean              foobar_math_evaluate                ( FoobarMathExpression const* expr,
-                                                            FoobarMathValue*            out_value );
 
 G_END_DECLS

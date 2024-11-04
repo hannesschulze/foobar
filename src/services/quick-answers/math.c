@@ -3,6 +3,16 @@
 #include "services/quick-answers/math.h"
 #include <math.h>
 
+//
+// FoobarMathExpression:
+//
+// A fully parsed mathematical expression which can be evaluated, for example "sin(pi) - 3" would be represented as:
+//  - Operation: SUB
+//    - Function: SIN
+//      - Constant: PI
+//    - Value: 3
+//
+
 struct _FoobarMathExpression
 {
 	FoobarMathExpressionType type;
@@ -34,6 +44,29 @@ struct _FoobarMathExpression
 	};
 };
 
+//
+// FoobarMathValue:
+//
+// Representation of a value. The goal of this memory structure is to store the value as an integer for as long as
+// possible. Because of this, there is a "decimal_places" field, so the actual value of an integer is
+// $v * 10^(-decimal_places)$.
+//
+// If absolutely necessary (for example, because we use a function like sin), the value is converted to a floating-point
+// value.
+//
+// Note that we use GMP to store the integer value to allow for arbitrarily large values. Because of this, the structure
+// should always be freed using foobar_math_value_free.
+//
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Expressions
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Helper to allocate a new FoobarMathExpression representing a value.
+//
+// Ownership of "value" is transferred to the new expression.
+//
 FoobarMathExpression* foobar_math_expression_new_value( FoobarMathValue value )
 {
 	FoobarMathExpression* res = g_new0( FoobarMathExpression, 1 );
@@ -42,6 +75,12 @@ FoobarMathExpression* foobar_math_expression_new_value( FoobarMathValue value )
 	return res;
 }
 
+//
+// Helper to allocate a new FoobarMathExpression representing a function to be evaluated with another expression as its
+// parameter.
+//
+// Ownership of "input" is transferred to the new expression.
+//
 FoobarMathExpression* foobar_math_expression_new_function(
 	FoobarMathFunction    function,
     FoobarMathExpression* input )
@@ -53,6 +92,9 @@ FoobarMathExpression* foobar_math_expression_new_function(
 	return res;
 }
 
+//
+// Helper to allocate a new FoobarMathExpression representing a known constant.
+//
 FoobarMathExpression* foobar_math_expression_new_constant( FoobarMathConstant constant )
 {
 	FoobarMathExpression* res = g_new0( FoobarMathExpression, 1 );
@@ -61,6 +103,12 @@ FoobarMathExpression* foobar_math_expression_new_constant( FoobarMathConstant co
 	return res;
 }
 
+//
+// Helper to allocate a new FoobarMathExpression representing an operation to be evaluated with two expressions as its
+// parameters.
+//
+// Ownership of "lhs" and "rhs" is transferred to the new expression.
+//
 FoobarMathExpression* foobar_math_expression_new_operation(
 	FoobarMathOperation   operation,
 	FoobarMathExpression* lhs,
@@ -74,6 +122,9 @@ FoobarMathExpression* foobar_math_expression_new_operation(
 	return res;
 }
 
+//
+// Release the memory associated with a mathematical expression, along with the expressions it owns.
+//
 void foobar_math_expression_free( FoobarMathExpression* expression )
 {
 	if ( expression )
@@ -101,6 +152,12 @@ void foobar_math_expression_free( FoobarMathExpression* expression )
 	}
 }
 
+//
+// Print a tree representation of a mathematical expression.
+//
+// This is mainly useful for debugging. "indentation" describes the current indentation level for the recursive call
+// (should be 0 initially).
+//
 void foobar_math_expression_print(
 	FoobarMathExpression const* expr,
 	gint                        indentation )
@@ -213,360 +270,11 @@ void foobar_math_expression_print(
 	}
 }
 
-void foobar_math_value_new_int( FoobarMathValue* out_value )
-{
-	out_value->type = FOOBAR_MATH_VALUE_INT;
-	mpz_init( out_value->int_value.v );
-	out_value->int_value.decimal_places = 0;
-}
-
-gboolean foobar_math_value_from_string(
-	gchar const*     input,
-	gsize            input_length,
-	FoobarMathValue* out_value )
-{
-	g_autofree gchar* without_sep = g_new0( gchar, input_length + 1 );
-	gsize sep_pos = input_length - 1;
-	gsize j = 0;
-	for ( gsize i = 0; i < input_length; ++i )
-	{
-		if ( input[i] == '.' )
-		{
-			sep_pos = i;
-		}
-		else
-		{
-			without_sep[j++] = input[i];
-		}
-	}
-
-	foobar_math_value_new_int( out_value );
-	out_value->int_value.decimal_places = input_length - 1 - sep_pos;
-	if ( mpz_init_set_str( out_value->int_value.v, without_sep, 10 ) == -1 )
-	{
-		mpz_clear( out_value->int_value.v );
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-void foobar_math_value_from_float(
-	long double      value,
-	FoobarMathValue* out_value )
-{
-	out_value->type = FOOBAR_MATH_VALUE_FLOAT;
-	out_value->float_value.v = value;
-}
-
-void foobar_math_value_copy(
-	FoobarMathValue  value,
-	FoobarMathValue* out_value )
-{
-	*out_value = value;
-
-	switch ( value.type )
-	{
-		case FOOBAR_MATH_VALUE_INT:
-			mpz_init_set( out_value->int_value.v, value.int_value.v );
-			break;
-		case FOOBAR_MATH_VALUE_FLOAT:
-			break;
-		default:
-			g_warn_if_reached( );
-			break;
-	}
-}
-
-void foobar_math_value_free( FoobarMathValue value )
-{
-	switch ( value.type )
-	{
-		case FOOBAR_MATH_VALUE_INT:
-			mpz_clear( value.int_value.v );
-			break;
-		case FOOBAR_MATH_VALUE_FLOAT:
-			break;
-		default:
-			g_warn_if_reached( );
-			break;
-	}
-}
-
-void foobar_math_value_negate( FoobarMathValue* value )
-{
-	switch ( value->type )
-	{
-		case FOOBAR_MATH_VALUE_INT:
-			mpz_neg( value->int_value.v, value->int_value.v );
-			break;
-		case FOOBAR_MATH_VALUE_FLOAT:
-			value->float_value.v = -value->float_value.v;
-			break;
-		default:
-			g_warn_if_reached( );
-			break;
-	}
-}
-
-gboolean foobar_math_value_add(
-	FoobarMathValue* lhs,
-	FoobarMathValue* rhs,
-	FoobarMathValue* out_value )
-{
-	if ( foobar_math_value_unify_integers( lhs, rhs ) )
-	{
-		foobar_math_value_new_int( out_value );
-		out_value->int_value.decimal_places = lhs->int_value.decimal_places;
-		mpz_add( out_value->int_value.v, lhs->int_value.v, rhs->int_value.v );
-		return TRUE;
-	}
-
-	long double lhs_float = foobar_math_value_to_float( *lhs );
-	long double rhs_float = foobar_math_value_to_float( *rhs );
-	foobar_math_value_from_float( lhs_float + rhs_float, out_value );
-	return TRUE;
-}
-
-gboolean foobar_math_value_sub(
-	FoobarMathValue* lhs,
-	FoobarMathValue* rhs,
-	FoobarMathValue* out_value )
-{
-	if ( foobar_math_value_unify_integers( lhs, rhs ) )
-	{
-		foobar_math_value_new_int( out_value );
-		out_value->int_value.decimal_places = lhs->int_value.decimal_places;
-		mpz_sub( out_value->int_value.v, lhs->int_value.v, rhs->int_value.v );
-		return TRUE;
-	}
-
-	long double lhs_float = foobar_math_value_to_float( *lhs );
-	long double rhs_float = foobar_math_value_to_float( *rhs );
-	foobar_math_value_from_float( lhs_float - rhs_float, out_value );
-	return TRUE;
-}
-
-gboolean foobar_math_value_mul(
-	FoobarMathValue* lhs,
-	FoobarMathValue* rhs,
-	FoobarMathValue* out_value )
-{
-	if ( lhs->type == FOOBAR_MATH_VALUE_INT && rhs->type == FOOBAR_MATH_VALUE_INT )
-	{
-		foobar_math_value_new_int( out_value );
-		out_value->int_value.decimal_places = lhs->int_value.decimal_places + rhs->int_value.decimal_places;
-		mpz_mul( out_value->int_value.v, lhs->int_value.v, rhs->int_value.v );
-		return TRUE;
-	}
-
-	long double lhs_float = foobar_math_value_to_float( *lhs );
-	long double rhs_float = foobar_math_value_to_float( *rhs );
-	foobar_math_value_from_float( lhs_float * rhs_float, out_value );
-	return TRUE;
-}
-
-gboolean foobar_math_value_div(
-	FoobarMathValue* lhs,
-	FoobarMathValue* rhs,
-	FoobarMathValue* out_value )
-{
-	if ( lhs->type == FOOBAR_MATH_VALUE_INT && rhs->type == FOOBAR_MATH_VALUE_INT )
-	{
-		if ( mpz_sgn( rhs->int_value.v ) == 0 ) { return FALSE; }
-
-		if ( rhs->int_value.decimal_places > lhs->int_value.decimal_places )
-		{
-			foobar_math_value_unify_integers( lhs, rhs );
-		}
-
-		foobar_math_value_new_int( out_value );
-		out_value->int_value.decimal_places = lhs->int_value.decimal_places - rhs->int_value.decimal_places;
-		mpz_t rem;
-		mpz_init( rem );
-		mpz_divmod( out_value->int_value.v, rem, lhs->int_value.v, rhs->int_value.v );
-		gboolean result_is_int = mpz_sgn( rem ) == 0;
-		mpz_clear( rem );
-
-		if ( result_is_int ) { return TRUE; }
-		foobar_math_value_free( *out_value );
-	}
-
-	long double lhs_float = foobar_math_value_to_float( *lhs );
-	long double rhs_float = foobar_math_value_to_float( *rhs );
-	long double result = lhs_float / rhs_float;
-	if ( isnanl( result ) || isinfl( result ) ) { return FALSE; }
-	foobar_math_value_from_float( result, out_value );
-	return TRUE;
-}
-
-gboolean foobar_math_value_pow(
-	FoobarMathValue* lhs,
-	FoobarMathValue* rhs,
-	FoobarMathValue* out_value )
-{
-	if ( lhs->type == FOOBAR_MATH_VALUE_INT &&
-			rhs->type == FOOBAR_MATH_VALUE_INT &&
-			rhs->int_value.decimal_places == 0 &&
-			mpz_fits_ulong_p( rhs->int_value.v ) )
-	{
-		unsigned long exp = mpz_get_ui( rhs->int_value.v );
-		foobar_math_value_new_int( out_value );
-		out_value->int_value.decimal_places = lhs->int_value.decimal_places * exp;
-		mpz_pow_ui( out_value->int_value.v, lhs->int_value.v, exp );
-		return TRUE;
-	}
-
-	long double lhs_float = foobar_math_value_to_float( *lhs );
-	long double rhs_float = foobar_math_value_to_float( *rhs );
-	long double result = powl( lhs_float, rhs_float );
-	if ( isnanl( result ) || isinfl( result ) ) { return FALSE; }
-	foobar_math_value_from_float( result, out_value );
-	return TRUE;
-}
-
-gboolean foobar_math_value_unify_integers(
-	FoobarMathValue* a,
-	FoobarMathValue* b )
-{
-	if ( a->type != FOOBAR_MATH_VALUE_INT || b->type != FOOBAR_MATH_VALUE_INT ) { return FALSE; }
-
-	// Extend the less precise representation so both numbers have the same number of decimal places.
-
-	gsize decimal_places = MAX( a->int_value.decimal_places, b->int_value.decimal_places );
-
-	mpz_t exp;
-	mpz_init( exp );
-
-	if ( decimal_places > a->int_value.decimal_places )
-	{
-		mpz_ui_pow_ui( exp, 10, decimal_places - a->int_value.decimal_places );
-		mpz_mul( a->int_value.v, a->int_value.v, exp );
-	}
-
-	if ( decimal_places > b->int_value.decimal_places )
-	{
-		mpz_ui_pow_ui( exp, 10, decimal_places - b->int_value.decimal_places );
-		mpz_mul( b->int_value.v, b->int_value.v, exp );
-	}
-
-	mpz_clear( exp );
-
-	a->int_value.decimal_places = b->int_value.decimal_places = decimal_places;
-
-	return TRUE;
-}
-
-gchar* foobar_math_value_to_string( FoobarMathValue value )
-{
-	switch ( value.type )
-	{
-		case FOOBAR_MATH_VALUE_INT:
-		{
-			gsize cap = mpz_sizeinbase( value.int_value.v, 10 );
-			cap = MAX( cap, value.int_value.decimal_places + 1 ); // pad with zeroes if necessary
-			gchar* result = g_new0( gchar, cap + 3 ); // length + null terminator + sign + separator
-			mpz_get_str( result, 10, value.int_value.v );
-			gsize len = strlen( result ); // actual size may be 1 char less (+ len now also includes sign)
-			gboolean has_sign = result[0] == '-';
-			if ( has_sign )
-			{
-				// add the sign back later, makes everything else easier
-				result += 1;
-				len -= 1;
-			}
-			// pad with leading zeroes if necessary
-			gsize padded_len = MAX( len, value.int_value.decimal_places + 1 );
-			memmove( &result[padded_len - len], result, len + 1 );
-			memset( result, '0', padded_len - len );
-			len = padded_len;
-			gboolean trailing_zeros = TRUE;
-			gsize decimal_places = value.int_value.decimal_places;
-			gsize actual_decimal_places = decimal_places;
-			for ( gsize i = 0; i < decimal_places; ++i )
-			{
-				if ( trailing_zeros && result[len - 1 - i] == '0' )
-				{
-					result[len - 1 - i] = '\0';
-					actual_decimal_places -= 1;
-				}
-				else
-				{
-					trailing_zeros = FALSE;
-				}
-			}
-			if ( actual_decimal_places > 0 )
-			{
-				memmove( &result[len + 1 - decimal_places], &result[len - decimal_places], decimal_places + 1 );
-				result[len - decimal_places] = '.';
-			}
-			if ( has_sign )
-			{
-				result -= 1;
-				len += 1;
-			}
-			return result;
-		}
-		case FOOBAR_MATH_VALUE_FLOAT:
-		{
-			gchar* result = g_strdup_printf( "%.30Lf", value.float_value.v );
-
-			// trim trailing zeros
-			size_t len = strlen( result );
-			for ( gsize i = 0; i < len; ++i )
-			{
-				if ( result[len - 1 - i] == '.' )
-				{
-					result[len - 1 - i] = '\0';
-					break;
-				}
-				else if ( result[len - 1 - i] == '0' )
-				{
-					result[len - 1 - i] = '\0';
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			return result;
-		}
-		default:
-			g_warn_if_reached( );
-			return NULL;
-	}
-}
-
-long double foobar_math_value_to_float( FoobarMathValue value )
-{
-	switch ( value.type )
-	{
-		case FOOBAR_MATH_VALUE_INT:
-		{
-			mpz_t exp, integer, frac;
-			mpz_inits( exp, integer, frac, NULL );
-			mpz_ui_pow_ui( exp, 10, value.int_value.decimal_places );
-			mpz_mod( frac, value.int_value.v, exp );
-			mpz_div( integer, value.int_value.v, exp );
-			mpf_t f_exp, f_frac;
-			mpf_inits( f_exp, f_frac, NULL );
-			mpf_set_z( f_exp, exp );
-			mpf_set_z( f_frac, frac );
-			mpf_div( f_frac, f_frac, f_exp );
-			long double result = mpz_get_d( integer ) + mpf_get_d( f_frac );
-			mpf_clears( f_exp, f_frac, NULL );
-			mpz_clears( exp, integer, frac, NULL );
-			return result;
-		}
-		case FOOBAR_MATH_VALUE_FLOAT:
-			return value.float_value.v;
-		default:
-			g_warn_if_reached( );
-			return 0;
-	}
-}
-
+//
+// Evaluate an expression, producing a value.
+//
+// On success (indicated by the return value TRUE), the value should be freed using foobar_math_value_free.
+//
 gboolean foobar_math_evaluate(
 	FoobarMathExpression const* expr,
 	FoobarMathValue*            out_value )
@@ -702,5 +410,442 @@ gboolean foobar_math_evaluate(
 		default:
 			g_warn_if_reached( );
 			return FALSE;
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Values
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Initialize a new integer value to zero.
+//
+// After this, the structure should be freed using foobar_math_value_free.
+//
+void foobar_math_value_new_int( FoobarMathValue* out_value )
+{
+	out_value->type = FOOBAR_MATH_VALUE_INT;
+	mpz_init( out_value->int_value.v );
+	out_value->int_value.decimal_places = 0;
+}
+
+//
+// Initialize a new value from its floating point representation.
+//
+// Although technically not necessary, you should still call foobar_math_value_free on the returned value.
+//
+void foobar_math_value_from_float(
+	long double      value,
+	FoobarMathValue* out_value )
+{
+	out_value->type = FOOBAR_MATH_VALUE_FLOAT;
+	out_value->float_value.v = value;
+}
+
+//
+// Parse a value from its string representation. This will always return an integer representation.
+//
+// On success (return value TRUE), the structure should be freed using foobar_math_value_free.
+//
+gboolean foobar_math_value_from_string(
+	gchar const*     input,
+	gsize            input_length,
+	FoobarMathValue* out_value )
+{
+	g_autofree gchar* without_sep = g_new0( gchar, input_length + 1 );
+	gsize sep_pos = input_length - 1;
+	gsize j = 0;
+	for ( gsize i = 0; i < input_length; ++i )
+	{
+		if ( input[i] == '.' )
+		{
+			sep_pos = i;
+		}
+		else
+		{
+			without_sep[j++] = input[i];
+		}
+	}
+
+	foobar_math_value_new_int( out_value );
+	out_value->int_value.decimal_places = input_length - 1 - sep_pos;
+	if ( mpz_init_set_str( out_value->int_value.v, without_sep, 10 ) == -1 )
+	{
+		mpz_clear( out_value->int_value.v );
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+//
+// Create a copy of a value, allocating necessary memory.
+//
+// After this, the structure should be freed using foobar_math_value_free.
+//
+void foobar_math_value_copy(
+	FoobarMathValue  value,
+	FoobarMathValue* out_value )
+{
+	*out_value = value;
+
+	switch ( value.type )
+	{
+		case FOOBAR_MATH_VALUE_INT:
+			mpz_init_set( out_value->int_value.v, value.int_value.v );
+			break;
+		case FOOBAR_MATH_VALUE_FLOAT:
+			break;
+		default:
+			g_warn_if_reached( );
+			break;
+	}
+}
+
+//
+// Release memory associated with a value.
+//
+// This is necessary because the integer representation is stored using GMP, which can store arbitrarily large values.
+//
+void foobar_math_value_free( FoobarMathValue value )
+{
+	switch ( value.type )
+	{
+		case FOOBAR_MATH_VALUE_INT:
+			mpz_clear( value.int_value.v );
+			break;
+		case FOOBAR_MATH_VALUE_FLOAT:
+			break;
+		default:
+			g_warn_if_reached( );
+			break;
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Operations
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Operation equivalent to "value *= -1".
+//
+void foobar_math_value_negate( FoobarMathValue* value )
+{
+	switch ( value->type )
+	{
+		case FOOBAR_MATH_VALUE_INT:
+			mpz_neg( value->int_value.v, value->int_value.v );
+			break;
+		case FOOBAR_MATH_VALUE_FLOAT:
+			value->float_value.v = -value->float_value.v;
+			break;
+		default:
+			g_warn_if_reached( );
+			break;
+	}
+}
+
+//
+// Operation setting "out_value = lhs + rhs".
+//
+// After this, the result value should be freed using foobar_math_value_free.
+//
+gboolean foobar_math_value_add(
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
+	FoobarMathValue* out_value )
+{
+	if ( foobar_math_value_unify_integers( lhs, rhs ) )
+	{
+		foobar_math_value_new_int( out_value );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places;
+		mpz_add( out_value->int_value.v, lhs->int_value.v, rhs->int_value.v );
+		return TRUE;
+	}
+
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
+	foobar_math_value_from_float( lhs_float + rhs_float, out_value );
+	return TRUE;
+}
+
+//
+// Operation setting "out_value = lhs - rhs".
+//
+// After this, the result value should be freed using foobar_math_value_free.
+//
+gboolean foobar_math_value_sub(
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
+	FoobarMathValue* out_value )
+{
+	if ( foobar_math_value_unify_integers( lhs, rhs ) )
+	{
+		foobar_math_value_new_int( out_value );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places;
+		mpz_sub( out_value->int_value.v, lhs->int_value.v, rhs->int_value.v );
+		return TRUE;
+	}
+
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
+	foobar_math_value_from_float( lhs_float - rhs_float, out_value );
+	return TRUE;
+}
+
+//
+// Operation setting "out_value = lhs * rhs".
+//
+// After this, the result value should be freed using foobar_math_value_free.
+//
+gboolean foobar_math_value_mul(
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
+	FoobarMathValue* out_value )
+{
+	if ( lhs->type == FOOBAR_MATH_VALUE_INT && rhs->type == FOOBAR_MATH_VALUE_INT )
+	{
+		foobar_math_value_new_int( out_value );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places + rhs->int_value.decimal_places;
+		mpz_mul( out_value->int_value.v, lhs->int_value.v, rhs->int_value.v );
+		return TRUE;
+	}
+
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
+	foobar_math_value_from_float( lhs_float * rhs_float, out_value );
+	return TRUE;
+}
+
+//
+// Operation setting "out_value = lhs / rhs".
+//
+// After this, the result value should be freed using foobar_math_value_free.
+//
+gboolean foobar_math_value_div(
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
+	FoobarMathValue* out_value )
+{
+	if ( lhs->type == FOOBAR_MATH_VALUE_INT && rhs->type == FOOBAR_MATH_VALUE_INT )
+	{
+		if ( mpz_sgn( rhs->int_value.v ) == 0 ) { return FALSE; }
+
+		if ( rhs->int_value.decimal_places > lhs->int_value.decimal_places )
+		{
+			foobar_math_value_unify_integers( lhs, rhs );
+		}
+
+		foobar_math_value_new_int( out_value );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places - rhs->int_value.decimal_places;
+		mpz_t rem;
+		mpz_init( rem );
+		mpz_divmod( out_value->int_value.v, rem, lhs->int_value.v, rhs->int_value.v );
+		gboolean result_is_int = mpz_sgn( rem ) == 0;
+		mpz_clear( rem );
+
+		if ( result_is_int ) { return TRUE; }
+		foobar_math_value_free( *out_value );
+	}
+
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
+	long double result = lhs_float / rhs_float;
+	if ( isnanl( result ) || isinfl( result ) ) { return FALSE; }
+	foobar_math_value_from_float( result, out_value );
+	return TRUE;
+}
+
+//
+// Operation setting "out_value = lhs ^ rhs".
+//
+// After this, the result value should be freed using foobar_math_value_free.
+//
+gboolean foobar_math_value_pow(
+	FoobarMathValue* lhs,
+	FoobarMathValue* rhs,
+	FoobarMathValue* out_value )
+{
+	if ( lhs->type == FOOBAR_MATH_VALUE_INT &&
+			rhs->type == FOOBAR_MATH_VALUE_INT &&
+			rhs->int_value.decimal_places == 0 &&
+			mpz_fits_ulong_p( rhs->int_value.v ) )
+	{
+		unsigned long exp = mpz_get_ui( rhs->int_value.v );
+		foobar_math_value_new_int( out_value );
+		out_value->int_value.decimal_places = lhs->int_value.decimal_places * exp;
+		mpz_pow_ui( out_value->int_value.v, lhs->int_value.v, exp );
+		return TRUE;
+	}
+
+	long double lhs_float = foobar_math_value_to_float( *lhs );
+	long double rhs_float = foobar_math_value_to_float( *rhs );
+	long double result = powl( lhs_float, rhs_float );
+	if ( isnanl( result ) || isinfl( result ) ) { return FALSE; }
+	foobar_math_value_from_float( result, out_value );
+	return TRUE;
+}
+
+//
+// Ensure that two integer values have the same number of decimal places.
+//
+// This may change the in-memory-representation of a value, but not its actual value. It only increases the precision of
+// one value
+//
+// If either a or b is not stored as an integer, this will return FALSE.
+//
+gboolean foobar_math_value_unify_integers(
+	FoobarMathValue* a,
+	FoobarMathValue* b )
+{
+	if ( a->type != FOOBAR_MATH_VALUE_INT || b->type != FOOBAR_MATH_VALUE_INT ) { return FALSE; }
+
+	// Extend the less precise representation so both numbers have the same number of decimal places.
+
+	gsize decimal_places = MAX( a->int_value.decimal_places, b->int_value.decimal_places );
+
+	mpz_t exp;
+	mpz_init( exp );
+
+	if ( decimal_places > a->int_value.decimal_places )
+	{
+		mpz_ui_pow_ui( exp, 10, decimal_places - a->int_value.decimal_places );
+		mpz_mul( a->int_value.v, a->int_value.v, exp );
+	}
+
+	if ( decimal_places > b->int_value.decimal_places )
+	{
+		mpz_ui_pow_ui( exp, 10, decimal_places - b->int_value.decimal_places );
+		mpz_mul( b->int_value.v, b->int_value.v, exp );
+	}
+
+	mpz_clear( exp );
+
+	a->int_value.decimal_places = b->int_value.decimal_places = decimal_places;
+
+	return TRUE;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Conversions
+// ---------------------------------------------------------------------------------------------------------------------
+
+//
+// Format a value as a string.
+//
+// The result is a null-terminated string which should be freed using g_free.
+//
+gchar* foobar_math_value_to_string( FoobarMathValue value )
+{
+	switch ( value.type )
+	{
+		case FOOBAR_MATH_VALUE_INT:
+		{
+			gsize cap = mpz_sizeinbase( value.int_value.v, 10 );
+			cap = MAX( cap, value.int_value.decimal_places + 1 ); // pad with zeroes if necessary
+			gchar* result = g_new0( gchar, cap + 3 ); // length + null terminator + sign + separator
+			mpz_get_str( result, 10, value.int_value.v );
+			gsize len = strlen( result ); // actual size may be 1 char less (+ len now also includes sign)
+			gboolean has_sign = result[0] == '-';
+			if ( has_sign )
+			{
+				// add the sign back later, makes everything else easier
+				result += 1;
+				len -= 1;
+			}
+			// pad with leading zeroes if necessary
+			gsize padded_len = MAX( len, value.int_value.decimal_places + 1 );
+			memmove( &result[padded_len - len], result, len + 1 );
+			memset( result, '0', padded_len - len );
+			len = padded_len;
+			gboolean trailing_zeros = TRUE;
+			gsize decimal_places = value.int_value.decimal_places;
+			gsize actual_decimal_places = decimal_places;
+			for ( gsize i = 0; i < decimal_places; ++i )
+			{
+				if ( trailing_zeros && result[len - 1 - i] == '0' )
+				{
+					result[len - 1 - i] = '\0';
+					actual_decimal_places -= 1;
+				}
+				else
+				{
+					trailing_zeros = FALSE;
+				}
+			}
+			if ( actual_decimal_places > 0 )
+			{
+				memmove( &result[len + 1 - decimal_places], &result[len - decimal_places], decimal_places + 1 );
+				result[len - decimal_places] = '.';
+			}
+			if ( has_sign )
+			{
+				result -= 1;
+				len += 1;
+			}
+			return result;
+		}
+		case FOOBAR_MATH_VALUE_FLOAT:
+		{
+			gchar* result = g_strdup_printf( "%.30Lf", value.float_value.v );
+
+			// trim trailing zeros
+			size_t len = strlen( result );
+			for ( gsize i = 0; i < len; ++i )
+			{
+				if ( result[len - 1 - i] == '.' )
+				{
+					result[len - 1 - i] = '\0';
+					break;
+				}
+				else if ( result[len - 1 - i] == '0' )
+				{
+					result[len - 1 - i] = '\0';
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			return result;
+		}
+		default:
+			g_warn_if_reached( );
+			return NULL;
+	}
+}
+
+//
+// Convert a value to its floating-point representation.
+//
+// This may be a lossy conversion and should only be done if absolutely necessary.
+//
+long double foobar_math_value_to_float( FoobarMathValue value )
+{
+	switch ( value.type )
+	{
+		case FOOBAR_MATH_VALUE_INT:
+		{
+			mpz_t exp, integer, frac;
+			mpz_inits( exp, integer, frac, NULL );
+			mpz_ui_pow_ui( exp, 10, value.int_value.decimal_places );
+			mpz_mod( frac, value.int_value.v, exp );
+			mpz_div( integer, value.int_value.v, exp );
+			mpf_t f_exp, f_frac;
+			mpf_inits( f_exp, f_frac, NULL );
+			mpf_set_z( f_exp, exp );
+			mpf_set_z( f_frac, frac );
+			mpf_div( f_frac, f_frac, f_exp );
+			long double result = mpz_get_d( integer ) + mpf_get_d( f_frac );
+			mpf_clears( f_exp, f_frac, NULL );
+			mpz_clears( exp, integer, frac, NULL );
+			return result;
+		}
+		case FOOBAR_MATH_VALUE_FLOAT:
+			return value.float_value.v;
+		default:
+			g_warn_if_reached( );
+			return 0;
 	}
 }
