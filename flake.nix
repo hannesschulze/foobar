@@ -28,8 +28,10 @@
             packages = [
               pkgs.libnotify # for testing the notification daemon
               pkgs.clang-tools
+              pkgs.gdb
             ];
             inputsFrom = [ foobar ];
+            hardeningDisable = [ "fortify" ];
           };
         };
       });

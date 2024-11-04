@@ -8,5 +8,8 @@ foobar_sources += files(
   'network-service.c',
   'bluetooth-service.c',
   'application-service.c',
+  'quick-answer-service.c',
   'configuration-service.c',
 )
+
+subdir('quick-answers')

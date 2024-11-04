@@ -48,5 +48,6 @@
         <file compressed="true">fluent-chevron-right-symbolic.svg</file>
         <file compressed="true">fluent-checkmark-symbolic.svg</file>
         <file compressed="true">fluent-microphone-symbolic.svg</file>
+        <file compressed="true">fluent-calculator-symbolic.svg</file>
     </gresource>
 </gresources>

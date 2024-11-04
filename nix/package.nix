@@ -15,6 +15,7 @@
   glib,
   gtk4,
   json-glib,
+  gmp,
   librsvg,
   networkmanager,
   wayland,
@@ -54,7 +55,7 @@
     '';
 
     nativeBuildInputs = [ makeWrapper git meson ninja vala sassc pkg-config gobject-introspection wayland-scanner ];
-    buildInputs = [ glib gtk4 json-glib librsvg networkmanager wayland libpulseaudio alsa-lib upower brightnessctl ];
+    buildInputs = [ glib gtk4 json-glib gmp librsvg networkmanager wayland libpulseaudio alsa-lib upower brightnessctl ];
 
     meta = with lib; {
       homepage = "https://github.com/hannesschulze/foobar";
