@@ -12,6 +12,7 @@
   pkg-config,
   gobject-introspection,
   wayland-scanner,
+  wayland-protocols,
   glib,
   gtk4,
   json-glib,
@@ -28,7 +29,7 @@
     dep-gtk4-layer-shell = fetchFromGitHub {
       owner = "wmww";
       repo = "gtk4-layer-shell";
-      rev = "v1.0.2";
+      rev = "v1.1.1";
       hash = "sha256-decjPkFkYy7kIjyozsB7BEmw33wzq1EQyIBrxO36984=";
     };
     dep-gvc = fetchFromGitLab {

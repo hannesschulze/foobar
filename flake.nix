@@ -14,6 +14,13 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        haskell = pkgs.haskellPackages.ghcWithPackages (p:
+          with p; [ haskell-language-server ]);
+        haskell-shell = pkgs.mkShell {
+          name = "Haskell";
+          packages = [ haskell pkgs.gdb pkgs.pkg-config pkgs.cabal-install ];
+          hardeningDisable = [ "fortify" ];
+        };
         foobar = (pkgs.callPackage ./nix/package.nix {});
       in
       {
@@ -33,6 +40,7 @@
             inputsFrom = [ foobar ];
             hardeningDisable = [ "fortify" ];
           };
+          haskell = haskell-shell;
         };
       });
 }

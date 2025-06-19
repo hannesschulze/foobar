@@ -1,0 +1,15 @@
+cabal-version: 3.0
+name:          foobar
+version:       2.0.0
+synopsis:      A simple bar, launcher, control center, and notification daemon.
+build-type:    Simple
+
+common warnings
+    ghc-options: -Wall
+
+executable foobar
+    import:           warnings
+    hs-source-dirs:   src
+    main-is:          Main.hs
+    build-depends:    base ^>=4.19.2.0
+    default-language: Haskell2010
