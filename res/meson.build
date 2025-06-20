@@ -1,2 +1,0 @@
-subdir('styles')
-subdir('icons')

@@ -15,5 +15,6 @@ executable foobar
                       haskell-gi-base,
                       gi-gio,
                       gi-gtk4,
+                      gi-gdk4,
                       gi-foobar
     default-language: Haskell2010

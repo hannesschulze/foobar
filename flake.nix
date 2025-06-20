@@ -26,6 +26,7 @@
             pkgs.meson
             pkgs.ninja
             pkgs.gobject-introspection
+            pkgs.sassc
           ];
           hardeningDisable = [ "fortify" ];
         };

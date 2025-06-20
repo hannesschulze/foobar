@@ -29,4 +29,7 @@ styles_resource = gnome.compile_resources(
     meson.current_source_dir(),
   ],
   dependencies: style_targets,
+  c_name: 'foobar_styles',
+  export: true,
+  extra_args: [ '--manual-register' ],
 )
