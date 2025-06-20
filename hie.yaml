@@ -1,0 +1,18 @@
+cradle:
+  multi:
+    - path: "lib"
+      config:
+        cradle:
+          cabal:
+            cabalProject: "lib/cabal.project"
+            components:
+              - path: "lib"
+                component: "exe:buildgen"
+    - path: "."
+      config:
+        cradle:
+          cabal:
+            - path: "app"
+              component: "exe:foobar"
+            - path: "lib/hs"
+              component: "lib:gi-foobar"

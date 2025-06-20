@@ -1,0 +1,2 @@
+packages: lib/hs/gi-foobar.cabal
+          app/foobar.cabal

@@ -15,10 +15,18 @@
       let
         pkgs = import nixpkgs { inherit system; };
         haskell = pkgs.haskellPackages.ghcWithPackages (p:
-          with p; [ haskell-language-server ]);
+          with p; [ haskell-language-server haskell-gi-base gi-gtk4 ]);
         haskell-shell = pkgs.mkShell {
           name = "Haskell";
-          packages = [ haskell pkgs.gdb pkgs.pkg-config pkgs.cabal-install ];
+          packages = [
+            haskell
+            pkgs.gdb
+            pkgs.pkg-config
+            pkgs.cabal-install
+            pkgs.meson
+            pkgs.ninja
+            pkgs.gobject-introspection
+          ];
           hardeningDisable = [ "fortify" ];
         };
         foobar = (pkgs.callPackage ./nix/package.nix {});

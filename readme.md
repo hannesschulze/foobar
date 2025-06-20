@@ -53,18 +53,18 @@ In addition, these dependencies should be available at runtime:
 
 ### Building
 
-To manually build foobar, run the following commands:
+To set up the build environment, run the following command:
 
 ```sh
 git clone https://github.com/hannesschulze/foobar.git && cd foobar
-meson setup build --prefix=/usr
-ninja -C build
+nix develop
+source setup-lib.sh
 ```
 
-Then, install it using the following command:
+To build foobar, run
 
 ```sh
-sudo ninja install -C build
+cabal build foobar
 ```
 
 ## Usage

@@ -9,7 +9,11 @@ common warnings
 
 executable foobar
     import:           warnings
-    hs-source-dirs:   src
     main-is:          Main.hs
-    build-depends:    base ^>=4.19.2.0
+    build-depends:    base,
+                      haskell-gi,
+                      haskell-gi-base,
+                      gi-gio,
+                      gi-gtk4,
+                      gi-foobar
     default-language: Haskell2010
