@@ -1,1 +1,3 @@
 packages: buildgen.cabal
+          ../third-party/haskell-gi/haskell-gi.cabal
+          ../third-party/haskell-gi/base/haskell-gi-base.cabal

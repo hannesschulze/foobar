@@ -16,3 +16,5 @@ cradle:
               component: "exe:foobar"
             - path: "lib/hs"
               component: "lib:gi-foobar"
+            - path: "third-party/haskell-gi/declarative-gtk"
+              component: "lib:declarative-gtk"

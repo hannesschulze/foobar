@@ -15,7 +15,27 @@
       let
         pkgs = import nixpkgs { inherit system; };
         haskell = pkgs.haskellPackages.ghcWithPackages (p:
-          with p; [ haskell-language-server haskell-gi-base gi-gtk4 ]);
+          with p; [
+            haskell-language-server
+            base
+            bytestring
+            containers
+            optics
+            ansi-terminal
+            attoparsec
+            cabal-doctest
+            directory
+            doctest
+            filepath
+            mtl
+            pretty-show
+            process
+            regex-tdfa
+            safe
+            xdg-basedir
+            hsc2hs
+            xml-conduit
+          ]);
         haskell-shell = pkgs.mkShell {
           name = "Haskell";
           packages = [
@@ -28,6 +48,7 @@
             pkgs.gobject-introspection
             pkgs.sassc
           ];
+          nativeBuildInputs = with pkgs; [ glib pcre2 libsysprof-capture gtk4 expat xorg.libXdmcp util-linux libselinux libsepol lerc fribidi libthai libdatrie ];
           hardeningDisable = [ "fortify" ];
         };
         foobar = (pkgs.callPackage ./nix/package.nix {});

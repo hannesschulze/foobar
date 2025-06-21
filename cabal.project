@@ -1,2 +1,19 @@
 packages: lib/hs/gi-foobar.cabal
           app/foobar.cabal
+          third-party/haskell-gi/declarative-gtk/declarative-gtk.cabal
+          third-party/haskell-gi/base/haskell-gi-base.cabal
+          third-party/haskell-gi/overloading/haskell-gi-overloading.cabal
+          third-party/haskell-gi/haskell-gi.cabal
+          third-party/haskell-gi/bindings/GModule/gi-gmodule.cabal
+          third-party/haskell-gi/bindings/HarfBuzz/gi-harfbuzz.cabal
+          third-party/haskell-gi/bindings/freetype2/gi-freetype2.cabal
+          third-party/haskell-gi/bindings/Gtk-4.0/gi-gtk4.cabal
+          third-party/haskell-gi/bindings/Gdk-4.0/gi-gdk4.cabal
+          third-party/haskell-gi/bindings/GdkPixbuf/gi-gdkpixbuf.cabal
+          third-party/haskell-gi/bindings/cairo/gi-cairo.cabal
+          third-party/haskell-gi/bindings/Gio/gi-gio.cabal
+          third-party/haskell-gi/bindings/GLib/gi-glib.cabal
+          third-party/haskell-gi/bindings/GObject/gi-gobject.cabal
+          third-party/haskell-gi/bindings/Graphene/gi-graphene.cabal
+          third-party/haskell-gi/bindings/Gsk/gi-gsk.cabal
+          third-party/haskell-gi/bindings/Pango/gi-pango.cabal
