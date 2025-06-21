@@ -9,6 +9,7 @@ import Data.Maybe (fromJust)
 import Data.GI.Base
 import Data.Text
 import GHC.Generics (Generic)
+import Foobar.Services.Config (initConfiguration, loadConfiguration, observeConfiguration)
 import Declarative.Gtk
 
 import qualified GI.Gtk as Gtk
@@ -44,6 +45,11 @@ appHandler MsgDoSomething s = s.stateText <~ "Did something!"
 
 onActivate :: Gtk.Application -> IO ()
 onActivate app = do
+  conf <- initConfiguration
+  putStrLn $ "Initial config: " ++ show conf
+  observeConfiguration $ do
+    conf' <- loadConfiguration
+    putStrLn $ "Updated config: " ++ show conf'
   provider <- new Gtk.CssProvider []
   provider.loadFromResource "/foobar/styles/default.css"
   disp <- Gdk.displayGetDefault

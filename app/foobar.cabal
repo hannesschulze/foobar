@@ -14,11 +14,16 @@ executable foobar
                       haskell-gi,
                       haskell-gi-base,
                       gi-gio,
+                      gi-glib,
                       gi-gtk4,
                       gi-gdk4,
                       gi-foobar,
                       declarative-gtk,
                       optics-core,
-                      text
-    other-modules:    Foobar.Application
+                      text,
+                      filepath,
+                      directory
+    other-modules:    Foobar.Application,
+                      Foobar.Models.Config,
+                      Foobar.Services.Config
     default-language: Haskell2010
