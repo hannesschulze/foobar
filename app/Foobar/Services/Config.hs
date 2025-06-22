@@ -1,14 +1,15 @@
-{-# LANGUAGE OverloadedStrings, OverloadedRecordDot, OverloadedLabels, DuplicateRecordFields, ScopedTypeVariables, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings, OverloadedRecordDot, OverloadedLabels, DuplicateRecordFields, ScopedTypeVariables,
+             FlexibleInstances, UndecidableInstances #-}
 
 -- |
 -- Module     : Foobar.Services.Config
 -- Description: Retrieval of data in the configuration file.
 
 module Foobar.Services.Config
-  ( observeConfiguration
-  , loadConfiguration
-  , initConfiguration
-  , defaultConfiguration
+  ( observeConfig
+  , loadConfig
+  , initConfig
+  , defaultConfig
   ) where
 
 import Data.Text hiding (filter, elem)
@@ -22,28 +23,24 @@ import Foreign.C (CString, CChar, peekCString, withCString)
 import Foreign.Marshal.Alloc (free)
 import Foreign (Ptr, nullPtr)
 import Foobar.Models.Config
+import Foobar.Services.Coalescing
 
 import qualified GI.GLib as GLib
 import qualified GI.Gio as Gio
-
-foreign import ccall "realpath" cRealpath :: CString -> CString -> IO (Ptr CChar)
-
-getRealPath :: FilePath -> IO FilePath
-getRealPath p = withCString p $ \cPath -> do
-                  cRes <- cRealpath cPath nullPtr
-                  res <- if cRes /= nullPtr then peekCString cRes else pure p
-                  free cRes
-                  pure res
 
 data MonitoringData
   = MonitoringData { actualPath      :: !FilePath
                    , actualMonitor   :: !Gio.FileMonitor
                    , actualHandlerId :: !SignalHandlerId }
 
-observeConfiguration :: IO () -> IO ()
-observeConfiguration handler = do
+-- | Observe the config file for changes.
+observeConfig
+  :: IO () -- ^ Callback invoked whenever the config changes.
+  -> IO ()
+observeConfig handler = do
   path <- getConfigPath
   actualData <- newIORef (Nothing :: Maybe MonitoringData)
+  scheduler <- mkEventScheduler 250
   let createMonitor :: FilePath -> IO (Maybe Gio.FileMonitor)
       createMonitor p = do
         file <- Gio.fileNewForPath p
@@ -53,8 +50,8 @@ observeConfiguration handler = do
           Right m' -> Just m'
   let actualMonitorHandler :: Gio.File -> Maybe Gio.File -> Gio.FileMonitorEvent -> IO ()
       actualMonitorHandler _ _ eventType = case eventType of
-                                             Gio.FileMonitorEventCreated -> handler
-                                             Gio.FileMonitorEventChanged -> handler
+                                             Gio.FileMonitorEventCreated -> scheduleEvent scheduler handler
+                                             Gio.FileMonitorEventChanged -> scheduleEvent scheduler handler
                                              _                           -> pure ()
   let clearActualMonitor :: IO ()
       clearActualMonitor = do
@@ -76,9 +73,9 @@ observeConfiguration handler = do
         realPath <- getRealPath path
         let actualPath' = if realPath == path then Nothing else Just realPath
         actualData' <- readIORef actualData
-        when ((actualPath <$> actualData') == actualPath') $
-          do clearActualMonitor
-             setActualMonitor actualPath'
+        when ((actualPath <$> actualData') /= actualPath') $ do
+          clearActualMonitor
+          setActualMonitor actualPath'
   let monitorHandler :: Gio.File -> Maybe Gio.File -> Gio.FileMonitorEvent -> IO ()
       monitorHandler file otherFile eventType = do
         updateActualMonitor
@@ -91,28 +88,31 @@ observeConfiguration handler = do
     Nothing -> pure ()
 
 
-loadConfiguration :: IO Config
-loadConfiguration = do
+-- | Load the config file, falling back to a default config if it is invalid.
+loadConfig :: IO Config
+loadConfig = do
   path <- getConfigPath
   f <- GLib.keyFileNew
   let process = do convertError (throw . ValidationError) $ f.loadFromFile path []
                    loadSection f ""
   let handleError (ValidationError msg) = do putStrLn $ "Could not read config: " ++ unpack msg
-                                             pure defaultConfiguration
+                                             pure defaultConfig
   catch process handleError
 
-initConfiguration :: IO Config
-initConfiguration = do
+-- | Create the config file if it doesn't exist, otherwise read it.
+initConfig :: IO Config
+initConfig = do
   path <- getConfigPath
   exists <- GLib.fileTest path [GLib.FileTestExists]
-  if exists then loadConfiguration
+  if exists then loadConfig
             else do f <- GLib.keyFileNew
-                    storeSection f "" defaultConfiguration
+                    storeSection f "" defaultConfig
                     void (try $ f.saveToFile (pack path) :: IO (Either GError ()))
-                    pure defaultConfiguration
+                    pure defaultConfig
 
-defaultConfiguration :: Config
-defaultConfiguration =
+-- | The default configuration.
+defaultConfig :: Config
+defaultConfig =
   Config { general       = GeneralConfig { stylesheet = "resource:///foobar/styles/default.css" }
          , panel         = PanelConfig { position     = ScreenEdgeLeft
                                        , margin       = 16
@@ -138,25 +138,25 @@ defaultConfiguration =
                                               , spacing          = 16
                                               , closeButtonInset = -6
                                               , timeFormat       = "%H:%M" } }
-  where panelItems = [ PanelItemIcon (PanelItemConfiguration { name     = "launcher"
-                                                             , position = PanelItemPositionStart })
-                                     (PanelIconConfiguration { iconName = "fluent-grid-dots-symbolic"
-                                                             , action   = ActionLauncher })
-                     , PanelItemWorkspaces (PanelItemConfiguration { name     = "workspaces"
-                                                                   , position = PanelItemPositionStart })
-                                           (PanelWorkspacesConfiguration { buttonSize = 20
-                                                                         , spacing    = 6 })
-                     , PanelItemClock (PanelItemConfiguration { name     = "clock"
-                                                              , position = PanelItemPositionCenter })
-                                      (PanelClockConfiguration { format = "%H\n%M"
-                                                               , action = ActionNone })
-                     , PanelItemStatus (PanelItemConfiguration { name     = "status"
-                                                               , position = PanelItemPositionEnd })
-                                       (PanelStatusConfiguration { items           = statusItems
-                                                                 , spacing         = 6
-                                                                 , showLabels      = False
-                                                                 , enableScrolling = False
-                                                                 , action          = ActionControlCenter }) ]
+  where panelItems = [ PanelItemIcon (PanelItemConfig { name     = "launcher"
+                                                      , position = PanelItemPositionStart })
+                                     (PanelIconConfig { iconName = "fluent-grid-dots-symbolic"
+                                                      , action   = ActionLauncher })
+                     , PanelItemWorkspaces (PanelItemConfig { name     = "workspaces"
+                                                            , position = PanelItemPositionStart })
+                                           (PanelWorkspacesConfig { buttonSize = 20
+                                                                  , spacing    = 6 })
+                     , PanelItemClock (PanelItemConfig { name     = "clock"
+                                                       , position = PanelItemPositionCenter })
+                                      (PanelClockConfig { format = "%H\n%M"
+                                                        , action = ActionNone })
+                     , PanelItemStatus (PanelItemConfig { name     = "status"
+                                                        , position = PanelItemPositionEnd })
+                                       (PanelStatusConfig { items           = statusItems
+                                                          , spacing         = 6
+                                                          , showLabels      = False
+                                                          , enableScrolling = False
+                                                          , action          = ActionControlCenter }) ]
         statusItems = [ PanelStatusItemBattery
                       , PanelStatusItemBrightness
                       , PanelStatusItemAudio
@@ -167,10 +167,13 @@ defaultConfiguration =
                             , ControlCenterRowAudioOutput
                             , ControlCenterRowBrightness ]
 
+-- | Config file path.
 getConfigPath :: IO FilePath
 getConfigPath = do
   dir <- GLib.getUserConfigDir
   pure (dir </> "foobar.conf")
+
+-- Validation errors
 
 newtype ValidationError = ValidationError Text
   deriving (Show)
@@ -181,6 +184,8 @@ instance Exception ValidationError
 
 throwValidationError :: Text -> Text -> Text -> IO a
 throwValidationError s k description = throw $ ValidationError $ s <> ":" <> k <> ": " <> description
+
+-- Key File Serialization
 
 class KeyFileSection a where
   loadSection  :: GLib.KeyFile -> Text -> IO a
@@ -287,40 +292,42 @@ instance KeyFileSection PanelItem where
                               storeSection f s x
                               storeSection f s y
 
-instance KeyFileSection PanelItemConfiguration where
-  loadSection f s = PanelItemConfiguration n <$> loadValue f s "position" []
+instance KeyFileSection PanelItemConfig where
+  loadSection f s = PanelItemConfig n <$> loadValue f s "position" []
     where n = Data.Text.drop 1 $ snd $ breakOn "." s
   storeSection f s c = do storeValue f s "position" c.position
 
-instance KeyFileSection PanelIconConfiguration where
-  loadSection f s = PanelIconConfiguration <$> loadValue f s "icon-name" []
-                                           <*> loadValue f s "action"    []
+instance KeyFileSection PanelIconConfig where
+  loadSection f s = PanelIconConfig <$> loadValue f s "icon-name" []
+                                    <*> loadValue f s "action"    []
   storeSection f s c = do storeValue f s "icon-name" c.iconName
                           storeValue f s "action"    c.action
 
-instance KeyFileSection PanelClockConfiguration where
-  loadSection f s = PanelClockConfiguration <$> loadValue f s "format" []
-                                            <*> loadValue f s "action" []
+instance KeyFileSection PanelClockConfig where
+  loadSection f s = PanelClockConfig <$> loadValue f s "format" []
+                                     <*> loadValue f s "action" []
   storeSection f s c = do storeValue f s "format" c.format
                           storeValue f s "action" c.action
 
-instance KeyFileSection PanelWorkspacesConfiguration where
-  loadSection f s = PanelWorkspacesConfiguration <$> loadValue f s "button-size" [ validateNonNegative, validateNonZero ]
-                                                 <*> loadValue f s "spacing"     [ validateNonNegative ]
+instance KeyFileSection PanelWorkspacesConfig where
+  loadSection f s = PanelWorkspacesConfig <$> loadValue f s "button-size" [ validateNonNegative, validateNonZero ]
+                                          <*> loadValue f s "spacing"     [ validateNonNegative ]
   storeSection f s c = do storeValue f s "button-size" c.buttonSize
                           storeValue f s "spacing"     c.spacing
 
-instance KeyFileSection PanelStatusConfiguration where
-  loadSection f s = PanelStatusConfiguration <$> loadValue f s "items"            [ validateDistinct ]
-                                             <*> loadValue f s "spacing"          [ validateNonNegative ]
-                                             <*> loadValue f s "show-labels"      []
-                                             <*> loadValue f s "enable-scrolling" []
-                                             <*> loadValue f s "action"           []
+instance KeyFileSection PanelStatusConfig where
+  loadSection f s = PanelStatusConfig <$> loadValue f s "items"            [ validateDistinct ]
+                                      <*> loadValue f s "spacing"          [ validateNonNegative ]
+                                      <*> loadValue f s "show-labels"      []
+                                      <*> loadValue f s "enable-scrolling" []
+                                      <*> loadValue f s "action"           []
   storeSection f s c = do storeValue f s "items"            c.items
                           storeValue f s "spacing"          c.spacing
                           storeValue f s "show-labels"      c.showLabels
                           storeValue f s "enable-scrolling" c.enableScrolling
                           storeValue f s "action"           c.action
+
+-- Options
 
 class (Bounded o, Enum o, Eq o) => Option o where
   readOption :: Text -> Maybe o
@@ -450,10 +457,22 @@ instance {-# OVERLAPS #-} Option o => KeyFileValue o where
     validate s k validators val
   storeValue f s k val = f.setString s k (showOption val)
 
-convertError :: (Text -> IO a) -> IO a -> IO a
+-- Helpers
+
+-- | Convert GErrors into other exceptions.
+convertError
+  :: (Text -> IO a) -- ^ Conversion function which throws an exception with a given message.
+  -> IO a           -- ^ Operation possibly throwing an exception.
+  -> IO a           -- ^ The same operation throwing the converted exception.
 convertError t a = catch a (gerrorMessage >=> t)
 
-parseOption :: forall o. Option o => Text -> Text -> Text -> IO o
+-- | Parse an option string, otherwise throw a matching validation error.
+parseOption
+  :: forall o. Option o
+  => Text -- ^ Section name.
+  -> Text -- ^ Key name.
+  -> Text -- ^ Option value string.
+  -> IO o -- ^ The parsed option.
 parseOption s k str = case readOption str of
                         Just o  -> pure o
                         Nothing -> let values = [minBound..] :: [o] in
@@ -461,9 +480,17 @@ parseOption s k str = case readOption str of
                                    let msg = "Invalid enum value \"" <> str <> "\" (allowed values: " <> allowed <> ")" in
                                    throwValidationError s k msg
 
-validate :: Text -> Text -> [Validator a] -> a -> IO a
+-- | Apply validators to an input, throwing a matching validation error if one validator fails.
+validate
+  :: Text          -- ^ Section name.
+  -> Text          -- ^ Key name.
+  -> [Validator a] -- ^ List of validators.
+  -> a             -- ^ The input.
+  -> IO a          -- ^ The validated input.
 validate s k validators val = val <$ forM_ validators (singleValidate val)
   where singleValidate val' v = v val' >>= mapM_ (throwValidationError s k)
+
+-- Validators
 
 validateFileURL :: Validator Text
 validateFileURL url = do
@@ -484,3 +511,14 @@ validateDistinct :: Option o => Validator [o]
 validateDistinct (x:xs) = if x `elem` xs then pure $ Just $ "Duplicate value \"" <> showOption x <> "\" not allowed."
                                          else validateDistinct xs
 validateDistinct []     = pure Nothing
+
+-- C Wrappers
+
+foreign import ccall "realpath" cRealpath :: CString -> CString -> IO (Ptr CChar)
+
+getRealPath :: FilePath -> IO FilePath
+getRealPath p = withCString p $ \cPath -> do
+                  cRes <- cRealpath cPath nullPtr
+                  res <- if cRes /= nullPtr then peekCString cRes else pure p
+                  free cRes
+                  pure res

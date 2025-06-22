@@ -18,11 +18,11 @@ module Foobar.Models.Config
   , Action(..)
   , -- * Panel Configuration
     PanelItem(..)
-  , PanelItemConfiguration(..)
-  , PanelIconConfiguration(..)
-  , PanelClockConfiguration(..)
-  , PanelWorkspacesConfiguration(..)
-  , PanelStatusConfiguration(..)
+  , PanelItemConfig(..)
+  , PanelIconConfig(..)
+  , PanelClockConfig(..)
+  , PanelWorkspacesConfig(..)
+  , PanelStatusConfig(..)
   , PanelStatusItem(..)
   , PanelItemPosition(..)
   , -- * Control Center Configuration
@@ -40,14 +40,14 @@ data Config
            , controlCenter :: !ControlCenterConfig -- ^ The control center configuration.
            , notifications :: !NotificationConfig  -- ^ The notification configuration.
            }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | General application settings not specific to a single component.
 data GeneralConfig
   = GeneralConfig { stylesheet :: !Text -- ^ URI to the CSS stylesheet to use -- this may be a resource that's bundled
                                         --   with Foobar or a "file:" URI.
                   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | Configuration for the panel shown at the edge of a screen.
 data PanelConfig
@@ -60,7 +60,7 @@ data PanelConfig
                 , multiMonitor :: !Bool        -- ^ Flag to enable the panel on all monitors.
                 , items        :: ![PanelItem] -- ^ Items configured to be displayed in the panel.
                 }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | Configuration for the application launcher.
 data LauncherConfig
@@ -68,7 +68,7 @@ data LauncherConfig
                    , position  :: !Int -- ^ Offset from the top of the screen.
                    , maxHeight :: !Int -- ^ Maximum allowed height for the launcher before scrolling is enabled.
                    }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | Configuration for the control center.
 data ControlCenterConfig
@@ -86,7 +86,7 @@ data ControlCenterConfig
                         , rows        :: ![ControlCenterRow]     -- ^ Ordered list of rows to display in the controls
                                                                  --   section.
                         }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | Configuration for notifications and the notification area shown in the corner of the screen.
 data NotificationConfig
@@ -97,7 +97,7 @@ data NotificationConfig
                                                    --   negative).
                        , timeFormat       :: !Text -- ^ The time format string as used by g_date_time_format.
                        }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | An edge of the screen.
 data ScreenEdge
@@ -122,55 +122,54 @@ data Action
 
 -- | Configuration for an item in the panel, including a general item configuration and an item-specific configuration.
 data PanelItem
-  = PanelItemIcon !PanelItemConfiguration !PanelIconConfiguration
-  | PanelItemClock !PanelItemConfiguration !PanelClockConfiguration
-  | PanelItemWorkspaces !PanelItemConfiguration !PanelWorkspacesConfiguration
-  | PanelItemStatus !PanelItemConfiguration !PanelStatusConfiguration
-  deriving (Show)
+  = PanelItemIcon !PanelItemConfig !PanelIconConfig
+  | PanelItemClock !PanelItemConfig !PanelClockConfig
+  | PanelItemWorkspaces !PanelItemConfig !PanelWorkspacesConfig
+  | PanelItemStatus !PanelItemConfig !PanelStatusConfig
+  deriving (Show, Eq)
 
 -- | General configuration for items in the panel.
-data PanelItemConfiguration
-  = PanelItemConfiguration { name     :: !Text              -- ^ Name of the panel item (this is derived from the
-                                                            --   section name, which has the form "panel.[name]").
-                           , position :: !PanelItemPosition -- ^ Position where the item should be placed item
-                                                            --   within the panel.
-                           }
-  deriving (Show)
+data PanelItemConfig
+  = PanelItemConfig { name     :: !Text              -- ^ Name of the panel item (this is derived from the section
+                                                     --   name, which has the form "panel.[name]").
+                    , position :: !PanelItemPosition -- ^ Position where the item should be placed item within the
+                                                     --   panel.
+                    }
+  deriving (Show, Eq)
 
 -- | Configuration for icon items in the panel.
-data PanelIconConfiguration
-  = PanelIconConfiguration { iconName :: !Text   -- ^ The GTK icon to use for the item.
-                           , action   :: !Action -- ^ Action invoked when the user clicks the item.
-                           }
-  deriving (Show)
+data PanelIconConfig
+  = PanelIconConfig { iconName :: !Text   -- ^ The GTK icon to use for the item.
+                    , action   :: !Action -- ^ Action invoked when the user clicks the item.
+                    }
+  deriving (Show, Eq)
 
 -- | Configuration for clock items in the panel.
-data PanelClockConfiguration
-  = PanelClockConfiguration { format :: !Text   -- ^ The time format string as used by g_date_time_format.
-                            , action :: !Action -- ^ Action invoked when the user clicks the item.
-                            }
-  deriving (Show)
+data PanelClockConfig
+  = PanelClockConfig { format :: !Text   -- ^ The time format string as used by g_date_time_format.
+                     , action :: !Action -- ^ Action invoked when the user clicks the item.
+                     }
+  deriving (Show, Eq)
 
 -- | Configuration for workspace items in the panel.
-data PanelWorkspacesConfiguration
-  = PanelWorkspacesConfiguration { buttonSize :: !Int -- ^ Size of each workspace button.
-                                 , spacing    :: !Int -- ^ Inner spacing between the workspace buttons.
-                                 }
-  deriving (Show)
+data PanelWorkspacesConfig
+  = PanelWorkspacesConfig { buttonSize :: !Int -- ^ Size of each workspace button.
+                          , spacing    :: !Int -- ^ Inner spacing between the workspace buttons.
+                          }
+  deriving (Show, Eq)
 
 -- | Configuration for status items in the panel.
-data PanelStatusConfiguration
-  = PanelStatusConfiguration { items           :: ![PanelStatusItem] -- ^ Ordered list of status items to display in
-                                                                     --   the item.
-                             , spacing         :: !Int               -- ^ Inner spacing between the status items.
-                             , showLabels      :: !Bool              -- ^ Indicates whether text labels should be shown
-                                                                     --   next to the status icons.
-                             , enableScrolling :: !Bool              -- ^ If set to true, some settings like volume or
-                                                                     --   brightness can be adjusted by scrolling while
-                                                                     --   hovering over the status item.
-                             , action          :: !Action            -- ^ Action invoked when the user clicks the item.
-                             }
-  deriving (Show)
+data PanelStatusConfig
+  = PanelStatusConfig { items           :: ![PanelStatusItem] -- ^ Ordered list of status items to display in the item.
+                      , spacing         :: !Int               -- ^ Inner spacing between the status items.
+                      , showLabels      :: !Bool              -- ^ Indicates whether text labels should be shown next
+                                                              --   to the status icons.
+                      , enableScrolling :: !Bool              -- ^ If set to true, some settings like volume or
+                                                              --   brightness can be adjusted by scrolling while
+                                                              --   hovering over the status item.
+                      , action          :: !Action            -- ^ Action invoked when the user clicks the item.
+                      }
+  deriving (Show, Eq)
 
 -- | An item to display in a status panel item.
 data PanelStatusItem

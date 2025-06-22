@@ -25,5 +25,6 @@ executable foobar
                       directory
     other-modules:    Foobar.Application,
                       Foobar.Models.Config,
-                      Foobar.Services.Config
+                      Foobar.Services.Config,
+                      Foobar.Services.Coalescing
     default-language: Haskell2010

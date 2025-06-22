@@ -7,56 +7,45 @@ module Foobar.Application
 
 import Data.Maybe (fromJust)
 import Data.GI.Base
-import Data.Text
 import GHC.Generics (Generic)
-import Foobar.Services.Config (initConfiguration, loadConfiguration, observeConfiguration)
 import Declarative.Gtk
+import Foobar.Services.Config
+import Foobar.Models.Config
 
 import qualified GI.Gtk as Gtk
 import qualified GI.Gdk as Gdk
 import qualified GI.Gio as Gio
 import qualified GI.Foobar as FB
 
+newtype AppState
+  = AppState { config :: Config }
+  deriving (Generic)
+
+data Message = MsgConfigChanged
+
 mkApplication :: IO Gtk.Application
 mkApplication = new Gtk.Application [ #applicationId := "com.github.hannesschulze.foobar-hs"
                                     , On #activate (onActivate ?self) ]
 
-newtype AppState
-  = AppState { stateText :: Text }
-  deriving (Generic)
-
-data Message = MsgQuit | MsgDoSomething
-
-initialState :: AppState
-initialState = AppState { stateText = "Do something" }
-
 appView :: View AppState Message Gtk.Widget
-appView state emit = widget DeclarativeBox [ #children := children
-                                           , #orientation := Gtk.OrientationVertical
-                                           , #spacing := 12]
-  where children = [ widget Gtk.Button [ #label :<~ state.stateText
-                                       , On #clicked (emit MsgDoSomething) ]
-                   , widget Gtk.Button [ #label := "Quit"
-                                       , On #clicked (emit MsgQuit) ] ]
+appView state _ = widget Gtk.Label [ #label :<~ lbl ]
+  where lbl = fmap ("Stylesheet: " <>) state.config.general.stylesheet
 
 appHandler :: Handler Message AppState
-appHandler MsgQuit _ = pure ()
-appHandler MsgDoSomething s = s.stateText <~ "Did something!"
+appHandler MsgConfigChanged s = do newConfig <- loadConfig
+                                   s.config <~ newConfig
 
 onActivate :: Gtk.Application -> IO ()
 onActivate app = do
-  conf <- initConfiguration
-  putStrLn $ "Initial config: " ++ show conf
-  observeConfiguration $ do
-    conf' <- loadConfiguration
-    putStrLn $ "Updated config: " ++ show conf'
+  initialState <- AppState <$> initConfig
   provider <- new Gtk.CssProvider []
   provider.loadFromResource "/foobar/styles/default.css"
   disp <- Gdk.displayGetDefault
   Gtk.styleContextAddProviderForDisplay (fromJust disp)
                                         provider
                                         (fromIntegral Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-  view <- mvh initialState appView appHandler
+  (view, emit, _) <- fullMVH initialState appView appHandler
+  observeConfig (emit MsgConfigChanged)
   window <- new Gtk.ApplicationWindow [ #application := app
                                       , #title := "Test"
                                       , #child := view ]
